@@ -27,25 +27,34 @@ int main() {
     std::chrono::duration<double> elapsed_units;
     auto start = std::chrono::high_resolution_clock::now();
     auto finish = start;
+    int r = -1;
 
     start = std::chrono::high_resolution_clock::now();
     for (int i = begin; i <= end; i++) {
         for (int j = begin; j <= end; j++) {
-            auto r = 10;
+            r = i * j;
         }
     }
     finish = std::chrono::high_resolution_clock::now();
     elapsed_units = finish - start;
+    // std::cout << "Last r: " << r << std::endl; // does not matter
+    std::cout << "Loop with operations took " << elapsed_units.count() << std::endl;
+
+    int steady_value = 10;
+    // int count = 0;
+
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = begin; i <= end; i++) {
+        for (int j = begin; j <= end; j++) {
+            // r = 10; // slower than i * j
+            r = steady_value; // even more slow
+            // count++; // same
+        }
+    }
+    finish = std::chrono::high_resolution_clock::now();
+    elapsed_units = finish - start;
+    // std::cout << "Last r: " << r << std::endl; // in case that matters
     std::cout << "Loop without operations took " << elapsed_units.count() << std::endl;
 
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = begin; i <= end; i++) {
-        for (int j = begin; j <= end; j++) {
-            auto r = i * j;
-        }
-    }
-    finish = std::chrono::high_resolution_clock::now();
-    elapsed_units = finish - start;
-    std::cout << "Loop with operations took " << elapsed_units.count() << std::endl;
     return 0;
 }
