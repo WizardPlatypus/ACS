@@ -1,5 +1,6 @@
 #include <iostream> // input/output
 #include <chrono> // timers
+#include <functional> // std::function<>
 
 /* This is how arguments work
 int main(int argc, char* argv[]) {
@@ -10,51 +11,38 @@ int main(int argc, char* argv[]) {
 }
 // */
 
-int main() {
-    std::cout << "Hallo! Enter two numbers separated by spaces to define testing range." << std::endl;
-    int begin, end;
-    std::cin >> begin >> end;
+std::chrono::milliseconds performance_test(std::function<int(int, int)> operation, int begin, int end, int step = 1) {
     if (begin > end) {
         auto _ = begin;
         begin = end;
         end = _;
     }
-    if (begin == end) {
-        std::cerr << "Range is of length 0" << std::endl;
-        return 1;
-    }
-    
-    std::chrono::duration<double> elapsed_units;
-    auto start = std::chrono::high_resolution_clock::now();
-    auto finish = start;
-    int r = -1;
+
+    std::chrono::high_resolution_clock::time_point start, finish;
+    int result;
 
     start = std::chrono::high_resolution_clock::now();
-    for (int i = begin; i <= end; i++) {
-        for (int j = begin; j <= end; j++) {
-            r = i * j;
+    for (int a = begin; a <= end; a += step) {
+        for (int b = begin; b <= end; b += step) {
+            result = operation(a, b);
         }
     }
     finish = std::chrono::high_resolution_clock::now();
-    elapsed_units = finish - start;
-    // std::cout << "Last r: " << r << std::endl; // does not matter
-    std::cout << "Loop with operations took " << elapsed_units.count() << std::endl;
 
-    int steady_value = 10;
-    // int count = 0;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+}
 
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = begin; i <= end; i++) {
-        for (int j = begin; j <= end; j++) {
-            // r = 10; // slower than i * j
-            r = steady_value; // even more slow
-            // count++; // same
-        }
-    }
-    finish = std::chrono::high_resolution_clock::now();
-    elapsed_units = finish - start;
-    // std::cout << "Last r: " << r << std::endl; // in case that matters
-    std::cout << "Loop without operations took " << elapsed_units.count() << std::endl;
+int main() {
+    std::cout << "Hallo! Enter two numbers separated by spaces to define testing range." << std::endl;
+    int begin, end;
+    std::cin >> begin >> end;
+
+    auto addition_time = performance_test([](int a, int b) { return a + b; }, begin, end);
+    auto hollow_time = performance_test([](int a, int b) { return 0; }, begin, end);
+
+    std::cout << "Test with operation took " << addition_time.count() << std::endl;
+    std::cout << "Test without operation took " << hollow_time.count() << std::endl;
+    std::cout << "Time difference is " << (addition_time - hollow_time).count() << std::endl;
 
     return 0;
 }
