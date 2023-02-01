@@ -3,11 +3,7 @@
 #include <functional> // std::function<>
 #include <tuple> // coupling return values
 #include <string> // string to number conversions
-
-template<typename T>
-T hollow(const T& a, const T& b) {
-    return a;
-}
+#include "operations.cpp" // my operation templates
 
 template<typename T>
 std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
@@ -45,11 +41,11 @@ int main(int argc, char* argv[]) {
             begin = std::stoi(argv[1]);
             break;
     }
-    auto addition = performance_test<int>([](int a, int b) { return a + b; }, begin, end, step);
+    auto addition = performance_test<int>(plus<int>, begin, end, step);
     auto addition_time = std::get<0>(addition);
     auto addition_count = std::get<1>(addition);
 
-    auto hollow = performance_test<int>([](int a, int b) { return 0; }, begin, end, step);
+    auto hollow = performance_test<int>(nothing<int>, begin, end, step);
     auto hollow_time = std::get<0>(hollow);
     auto hollow_count = std::get<1>(hollow);
 
