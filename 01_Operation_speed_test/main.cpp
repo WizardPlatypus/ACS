@@ -1,23 +1,17 @@
 #include <iostream> // input/output
 #include <chrono> // timers
 #include <functional> // std::function<>
+#include <tuple> // coupling return values
+#include <string> // string to number conversions
 
-/* This is how arguments work
-int main(int argc, char* argv[]) {
-    for (int i = 0; i < argc; i++) {
-        std::cout << argv[i] << std::endl;
-    }
-    return 0;
-}
-// */
-
-std::chrono::milliseconds performance_test(std::function<int(int, int)> operation, int begin, int end, int step = 1) {
+std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<int(int, int)> operation, int begin, int end, int step = 1) {
     if (begin > end) {
         auto _ = begin;
         begin = end;
         end = _;
     }
 
+    size_t execution_count = 0;
     std::chrono::high_resolution_clock::time_point start, finish;
     int result;
 
@@ -25,24 +19,38 @@ std::chrono::milliseconds performance_test(std::function<int(int, int)> operatio
     for (int a = begin; a <= end; a += step) {
         for (int b = begin; b <= end; b += step) {
             result = operation(a, b);
+            execution_count++;
         }
     }
     finish = std::chrono::high_resolution_clock::now();
 
-    return std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    return std::make_tuple(std::chrono::duration_cast<std::chrono::milliseconds>(finish - start), execution_count);
 }
 
-int main() {
-    std::cout << "Hallo! Enter two numbers separated by spaces to define testing range." << std::endl;
-    int begin, end;
-    std::cin >> begin >> end;
+int main(int argc, char* argv[]) {
+    int begin = 0, end = 10'000, step = 1;
+    // this kind of switch ensures that as much of input data is processed as possible
+    switch (argc) {
+        case 4:
+            step = std::stoi(argv[3]);
+        case 3:
+            end = std::stoi(argv[2]);
+        case 2:
+            begin = std::stoi(argv[1]);
+            break;
+    }
+    auto addition = performance_test([](int a, int b) { return a + b; }, begin, end, step);
+    auto addition_time = std::get<0>(addition);
+    auto addition_count = std::get<1>(addition);
 
-    auto addition_time = performance_test([](int a, int b) { return a + b; }, begin, end);
-    auto hollow_time = performance_test([](int a, int b) { return 0; }, begin, end);
+    auto hollow = performance_test([](int a, int b) { return 0; }, begin, end, step);
+    auto hollow_time = std::get<0>(hollow);
+    auto hollow_count = std::get<1>(hollow);
 
-    std::cout << "Test with operation took " << addition_time.count() << std::endl;
-    std::cout << "Test without operation took " << hollow_time.count() << std::endl;
-    std::cout << "Time difference is " << (addition_time - hollow_time).count() << std::endl;
+    std::cout << "Testing addition on " << addition_count << " operations took " << addition_time.count()  << " milliseconds." << std::endl;
+    std::cout << "Testing hollow call on " << hollow_count << " operations took " << hollow_time.count()  << " milliseconds." << std::endl;
+    std::cout << "Time difference is " << (addition_time - hollow_time).count()
+              << " milliseconds, count difference is " << addition_count - hollow_count << "." << std::endl;
 
     return 0;
 }
