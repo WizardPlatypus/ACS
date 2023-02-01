@@ -4,7 +4,13 @@
 #include <tuple> // coupling return values
 #include <string> // string to number conversions
 
-std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<int(int, int)> operation, int begin, int end, int step = 1) {
+template<typename T>
+T hollow(const T& a, const T& b) {
+    return a;
+}
+
+template<typename T>
+std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
     if (begin > end) {
         auto _ = begin;
         begin = end;
@@ -13,7 +19,7 @@ std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<int
 
     size_t execution_count = 0;
     std::chrono::high_resolution_clock::time_point start, finish;
-    int result;
+    T result;
 
     start = std::chrono::high_resolution_clock::now();
     for (int a = begin; a <= end; a += step) {
@@ -39,11 +45,11 @@ int main(int argc, char* argv[]) {
             begin = std::stoi(argv[1]);
             break;
     }
-    auto addition = performance_test([](int a, int b) { return a + b; }, begin, end, step);
+    auto addition = performance_test<int>([](int a, int b) { return a + b; }, begin, end, step);
     auto addition_time = std::get<0>(addition);
     auto addition_count = std::get<1>(addition);
 
-    auto hollow = performance_test([](int a, int b) { return 0; }, begin, end, step);
+    auto hollow = performance_test<int>([](int a, int b) { return 0; }, begin, end, step);
     auto hollow_time = std::get<0>(hollow);
     auto hollow_count = std::get<1>(hollow);
 
