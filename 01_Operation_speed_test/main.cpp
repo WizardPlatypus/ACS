@@ -2,17 +2,10 @@
 #include <chrono> // timers
 #include <functional> // std::function<>
 #include <tuple> // coupling return values
-#include <string> // string to number conversions
 #include "operations.cpp" // my operation templates
 
 template<typename T>
 std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
-    if (begin > end) {
-        auto _ = begin;
-        begin = end;
-        end = _;
-    }
-
     size_t execution_count = 0;
     std::chrono::high_resolution_clock::time_point start, finish;
     T result;
@@ -29,18 +22,9 @@ std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(c
     return std::make_tuple(std::chrono::duration_cast<std::chrono::milliseconds>(finish - start), execution_count);
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     int begin = 0, end = 10'000, step = 1;
-    // this kind of switch ensures that as much of input data is processed as possible
-    switch (argc) {
-        case 4:
-            step = std::stoi(argv[3]);
-        case 3:
-            end = std::stoi(argv[2]);
-        case 2:
-            begin = std::stoi(argv[1]);
-            break;
-    }
+
     auto addition = performance_test<int>(plus<int>, begin, end, step);
     auto addition_time = std::get<0>(addition);
     auto addition_count = std::get<1>(addition);
