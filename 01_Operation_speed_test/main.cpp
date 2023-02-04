@@ -57,17 +57,17 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 
 template<typename T>
 void type_test_wrapper(const std::string& type_label, const T& begin, const T& end, const T& step) {
-    operation_test_wrapper<T>(type_label, "nothing", nothing<int>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "add", add<int>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "subtract", subtract<int>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "multiply", multiply<int>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "divide", divide<int>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "modulo", modulo<int>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "nothing", nothing<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "add", add<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "subtract", subtract<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "multiply", multiply<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "divide", divide<T>, begin, end, step);
+    // operation_test_wrapper<T>(type_label, "modulo", modulo<T>, begin, end, step);
 }
 
 int main() {
-    type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
-    // type_test_wrapper<double>("double", (double)std::numeric_limits<int>::min(), (double)std::numeric_limits<int>::max(), 10) ;
+    // type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
+    type_test_wrapper<double>("double", (double)std::numeric_limits<int>::min(), (double)std::numeric_limits<int>::max(), 10) ;
 
     return 0;
 }
