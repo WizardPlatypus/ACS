@@ -4,7 +4,7 @@
 #include "operations.cpp" // my operation templates
 
 template<typename T>
-std::chrono::milliseconds test_operation(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
+std::chrono::milliseconds test_operation(const std::function<T(const T, const T)>& operation, const T begin, const T end, const T step = 1) {
     size_t execution_count = 0;
     std::chrono::high_resolution_clock::time_point start, finish;
     T result;
