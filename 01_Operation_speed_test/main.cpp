@@ -1,11 +1,10 @@
 #include <iostream> // input/output
 #include <chrono> // timers
 #include <functional> // std::function<>
-#include <tuple> // coupling return values
 #include "operations.cpp" // my operation templates
 
 template<typename T>
-std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
+std::chrono::milliseconds test_operation(std::function<T(const T&, const T&)> operation, T begin, T end, T step = 1) {
     size_t execution_count = 0;
     std::chrono::high_resolution_clock::time_point start, finish;
     T result;
@@ -19,24 +18,22 @@ std::tuple<std::chrono::milliseconds, size_t> performance_test(std::function<T(c
     }
     finish = std::chrono::high_resolution_clock::now();
 
-    return std::make_tuple(std::chrono::duration_cast<std::chrono::milliseconds>(finish - start), execution_count);
+    return std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
 }
 
 int main() {
     int begin = 0, end = 10'000, step = 1;
+    size_t count = (end - begin + 1) / step;
+    count *= count;
 
-    auto addition = performance_test<int>(plus<int>, begin, end, step);
-    auto addition_time = std::get<0>(addition);
-    auto addition_count = std::get<1>(addition);
+    auto add_time = test_operation<int>(add<int>, begin, end, step).count();
 
-    auto hollow = performance_test<int>(nothing<int>, begin, end, step);
-    auto hollow_time = std::get<0>(hollow);
-    auto hollow_count = std::get<1>(hollow);
+    auto nothing_time = test_operation<int>(nothing<int>, begin, end, step).count();
 
-    std::cout << "Testing addition on " << addition_count << " operations took " << addition_time.count()  << " milliseconds." << std::endl;
-    std::cout << "Testing hollow call on " << hollow_count << " operations took " << hollow_time.count()  << " milliseconds." << std::endl;
-    std::cout << "Time difference is " << (addition_time - hollow_time).count()
-              << " milliseconds, count difference is " << addition_count - hollow_count << "." << std::endl;
+    std::cout << "Count: " << count << std::endl;
+    std::cout << "Add: " << add_time << " ms" << std::endl;
+    std::cout << "Nothing: " << nothing_time << " ms" << std::endl;
+    std::cout << "Time difference is " << add_time - nothing_time << " ms" << std::endl;
 
     return 0;
 }
