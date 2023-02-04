@@ -3,24 +3,31 @@
 #include <functional> // std::function<>
 #include <string>
 #include <forward_list> // single-linked list datastructure
+#include <limits>
 
 #include "operations.cpp" // my operation templates
 
-using time_unit = std::chrono::milliseconds;
+using time_unit = std::chrono::microseconds;
 
 
 template<typename T>
-time_unit test_operation(const std::function<T(const T, const T)>& operation, const T begin, const T end, const T step = 1) {
-    size_t execution_count = 0;
+time_unit test_operation(const std::function<T(const T, const T)>& operation, const T begin, const T end, const T step, size_t& count) {
     std::chrono::high_resolution_clock::time_point start, finish;
-    T result;
+    T result, left = begin, right = end;
+    count = 0;
+    bool coin = false;
 
     start = std::chrono::high_resolution_clock::now();
-    for (int a = begin; a <= end; a += step) {
-        for (int b = begin; b <= end; b += step) {
-            result = operation(a, b);
-            execution_count++;
+    while (left < right) {
+        // std::cerr << left << ' ';
+        result = operation(left, right);
+        if (coin) {
+            left += step;
+        } else {
+            right -= step;
         }
+        coin = !coin;
+        count++;
     }
     finish = std::chrono::high_resolution_clock::now();
 
@@ -28,8 +35,9 @@ time_unit test_operation(const std::function<T(const T, const T)>& operation, co
 }
 
 template<typename T>
-void operation_test_wrapper(const std::string type_label, const std::string operation_label, const int count, const std::function<T(const T, const T)>& operation, const T begin, const T end, const T step = 1) {
-    auto time = test_operation<T>(operation, begin, end, step).count();
+void operation_test_wrapper(const std::string type_label, const std::string operation_label, const std::function<T(const T, const T)>& operation, const T begin, const T end, const T step) {
+    size_t count = -1;
+    auto time = test_operation<T>(operation, begin, end, step, count).count();
 
     // type, operation, count, time
     std::forward_list<std::string> data {
@@ -47,12 +55,19 @@ void operation_test_wrapper(const std::string type_label, const std::string oper
     std::cout << std::endl;
 }
 
-int main() {
-    int begin = 0, end = 10'000, step = 1;
-    size_t count = (end - begin + 1) / step;
-    count *= count;
+template<typename T>
+void type_test_wrapper(const std::string type_label, const T begin, const T end, const T step) {
+    operation_test_wrapper<T>(type_label, "nothing", nothing<int>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "add", add<int>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "subtract", subtract<int>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "multiply", multiply<int>, begin, end, step);
+    // operation_test_wrapper<T>(type_label, "divide", divide<int>, count, begin, end, step);
+    // operation_test_wrapper<T>(type_label, "modulo", modulo<int>, count, begin, end, step);
+}
 
-    operation_test_wrapper<int>("int", "add", count, add<int>, begin, end, step);
+int main() {
+    // type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
+    type_test_wrapper<double>("double", (double)std::numeric_limits<int>::min(), (double)std::numeric_limits<int>::max(), 10) ;
 
     return 0;
 }
