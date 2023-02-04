@@ -1,1 +1,1 @@
-g++ -O0 main.cpp operations.cpp -o main.exe
+g++ -O0 main.cpp -o main.exe
