@@ -19,7 +19,6 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, c
 
     start = std::chrono::high_resolution_clock::now();
     while (left < right) {
-        // std::cerr << left << ' ';
         result = operation(left, right);
         if (coin) {
             left += step;
@@ -57,17 +56,18 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 
 template<typename T>
 void type_test_wrapper(const std::string& type_label, const T& begin, const T& end, const T& step) {
-    operation_test_wrapper<T>(type_label, "nothing", nothing<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "add", add<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "subtract", subtract<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "multiply", multiply<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "divide", divide<T>, begin, end, step);
-    // operation_test_wrapper<T>(type_label, "modulo", modulo<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "add", operations::add<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, begin, end, step);
+    operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, begin, end, step);
 }
 
 int main() {
-    // type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
+    type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
     type_test_wrapper<double>("double", (double)std::numeric_limits<int>::min(), (double)std::numeric_limits<int>::max(), 10) ;
+    type_test_wrapper<float>("float", (float)std::numeric_limits<int>::min(), (float)std::numeric_limits<int>::max(), 100) ;
 
     return 0;
 }
