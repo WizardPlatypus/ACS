@@ -21,11 +21,17 @@ namespace operations {
 
     template<typename T>
     T divide(const T& a, const T& b) {
+        if (b == 0) {
+            return 0;
+        }
         return a / b;
     }
 
     template<typename T>
     T modulo(const T& a, const T& b) {
+        if (b == 0) {
+            return 0;
+        }
         return a % b;
     }
 
