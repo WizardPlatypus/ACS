@@ -9,34 +9,58 @@
 
 using time_unit = std::chrono::microseconds;
 
+template<typename T>
+union Magic {
+    uint64_t source;
+    T view;
+};
 
 template<typename T>
-time_unit test_operation(const std::function<T(const T&, const T&)> operation, const T& begin, const T& end, const T& step, size_t& count) {
+time_unit test_operation(const std::function<T(const T&, const T&)> operation, const uint64_t& skip, size_t& count) {
     std::chrono::high_resolution_clock::time_point start, finish;
-    T result, left = begin, right = end;
+    Magic<T> left, right;
+    T result;
     count = 0;
-    bool coin = false;
+    bool coin = true;
+
+    left.source = 0;
+    /*
+    0001 -> 1000 -> 0111 -> 1110 -> 1111
+    */
+    right.source = 1;
+    right.source <<= (sizeof(T)*8 - 1);
+    right.source -= 1;
+    right.source <<= 1;
+    right.source += 1;
+
+    // std::cout << left.source << ' ' << right.source << std::endl;
 
     start = std::chrono::high_resolution_clock::now();
-    while (left < right) {
-        result = operation(left, right);
+    while (left.source < right.source) {
+        result = operation(left.view, right.view);
         if (coin) {
-            left += step;
+            left.source += 1 + skip;
         } else {
-            right -= step;
+            right.source -= 1 + skip;
         }
         coin = !coin;
         count++;
+        /*
+        if (count % 1000 == 0) {
+            std::cerr << left.source << '\t' << right.source << std::endl;
+        }
+        //*/
     }
+    // std::cout << result << std::endl;
     finish = std::chrono::high_resolution_clock::now();
 
     return std::chrono::duration_cast<time_unit>(finish - start);
 }
 
 template<typename T>
-void operation_test_wrapper(const std::string& type_label, const std::string& operation_label, const std::function<T(const T&, const T&)> operation, const T& begin, const T& end, const T& step) {
+void operation_test_wrapper(const std::string& type_label, const std::string& operation_label, const std::function<T(const T&, const T&)> operation, const uint64_t& skip) {
     size_t count = -1;
-    auto time = test_operation<T>(operation, begin, end, step, count).count();
+    auto time = test_operation<T>(operation, skip, count).count();
 
     // type, operation, count, time
     std::forward_list<std::string> data {
@@ -55,19 +79,20 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 }
 
 template<typename T>
-void type_test_wrapper(const std::string& type_label, const T& begin, const T& end, const T& step) {
-    operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "add", operations::add<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, begin, end, step);
-    operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, begin, end, step);
+void type_test_wrapper(const std::string& type_label, const uint64_t& skip) {
+    operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, skip);
+    operation_test_wrapper<T>(type_label, "add", operations::add<T>, skip);
+    operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, skip);
+    operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, skip);
+    operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, skip);
+    operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, skip);
 }
 
 int main() {
-    type_test_wrapper<int>("int", std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 10);
-    type_test_wrapper<double>("double", (double)std::numeric_limits<int>::min(), (double)std::numeric_limits<int>::max(), 10) ;
-    type_test_wrapper<float>("float", (float)std::numeric_limits<int>::min(), (float)std::numeric_limits<int>::max(), 100) ;
+    // type_test_wrapper<int>("int", 50);
+    // type_test_wrapper<unsigned int>("unsigned int", 50);
+    // type_test_wrapper<float>("float", 100);
+    type_test_wrapper<double>("double", 10 * ((uint64_t)1 << 32));
 
     return 0;
 }
