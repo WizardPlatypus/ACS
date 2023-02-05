@@ -40,7 +40,17 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
         for (left.source = source_min; left.source <= source_max; left.source += do_one_over) {
+            // this might happen because of overflow
+            if (left.source != 0 && left.source - do_one_over > left.source) {
+                // on first iteration that if would always pass ^^^
+                break;
+            }
             for (right.source = left.source; right.source <= source_max; right.source += do_one_over) {
+                // this might happen because of overflow
+                if (right.source != 0 && right.source - do_one_over > right.source) {
+                    // on first iteration that if would always pass ^^^
+                    break;
+                }
                 result = operation(left.view, right.view);
                 count++;
                 /*
@@ -49,6 +59,7 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
                 }
                 //*/
             }
+            // std::cout << "Got out" << std::endl;
         }
     }
     // std::cout << result << std::endl;
@@ -86,27 +97,16 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_ove
     operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, do_one_over, repeat);
+    std::cout << std::endl;
 }
 
 int main() {
-    //*
+    // count = repeat * (2^bits / do_one_over + 1) * (2^bits / do_one_over) / 2
+
     type_test_wrapper<uint8_t>("uint8_t", 1, 1 << 12);
-    std::cout << std::endl;
-    //type_test_wrapper<int8_t>("uint8_t", 0, 1 << 12);
-    //std::cout << std::endl;
-    //*/
-    /*
-    type_test_wrapper<uint16_t>("uint16_t", 0);
-    std::cout << std::endl;
-    type_test_wrapper<int16_t>("int16_t", 0);
-    std::cout << std::endl;
-    //*/
-    /*
-    type_test_wrapper<uint32_t>("uint32_t", 0);
-    std::cout << std::endl;
-    type_test_wrapper<int32_t>("int32_t", 0);
-    std::cout << std::endl;
-    //*/
+    type_test_wrapper<uint16_t>("uint16_t", 4, 1);
+    type_test_wrapper<uint32_t>("uint32_t", 261'641, 1);
+    type_test_wrapper<uint64_t>("uint64_t", 1'123'741'531'702'044, 1);
 
     return 0;
 }
