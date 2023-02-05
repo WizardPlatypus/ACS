@@ -35,18 +35,16 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        left.source = source_min;
-        right.source = source_max;
-        while (left.source < right.source) {
-            result = operation(left.view, right.view);
-            left.source += 1 + skip;
-            right.source -= 1 + skip;
-            count++;
-            /*
-            if (count % 1000 == 0) {
-                std::cerr << left.source << '\t' << right.source << std::endl;
+        for (left.source = source_min; left.source <= source_max; left.source += 1 + skip) {
+            for (right.source = left.source; right.source <= source_max; right.source += 1 + skip) {
+                result = operation(left.view, right.view);
+                count++;
+                /*
+                if (count % 1000 == 0) {
+                    std::cerr << left.source << '\t' << right.source << std::endl;
+                }
+                //*/
             }
-            //*/
         }
     }
     // std::cout << result << std::endl;
@@ -87,20 +85,18 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& skip, cons
 }
 
 int main() {
-    // type_test_wrapper<int>("int", 50);
-    // type_test_wrapper<unsigned int>("unsigned int", 50);
-    // type_test_wrapper<float>("float", 100);
-    // type_test_wrapper<double>("double", 10 * ((uint64_t)1 << 32));
-    /*
+    //*
     type_test_wrapper<uint8_t>("uint8_t", 0);
     std::cout << std::endl;
     type_test_wrapper<int8_t>("uint8_t", 0);
     std::cout << std::endl;
     //*/
-    type_test_wrapper<uint16_t>("uint16_t", 0, 1 << 12);
+    /*
+    type_test_wrapper<uint16_t>("uint16_t", 0);
     std::cout << std::endl;
-    type_test_wrapper<int16_t>("int16_t", 0, 1 << 12);
+    type_test_wrapper<int16_t>("int16_t", 0);
     std::cout << std::endl;
+    //*/
     /*
     type_test_wrapper<uint32_t>("uint32_t", 0);
     std::cout << std::endl;
