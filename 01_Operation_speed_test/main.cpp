@@ -3,7 +3,6 @@
 #include <functional> // std::function<>
 #include <string>
 #include <forward_list> // single-linked list datastructure
-#include <limits>
 
 #include "operations.cpp" // my operation templates
 
@@ -16,7 +15,7 @@ union Magic {
 };
 
 template<typename T>
-time_unit test_operation(const std::function<T(const T&, const T&)> operation, uint64_t& count, uint64_t do_one_over, uint64_t repeat) {
+time_unit test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
@@ -25,7 +24,7 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
     uint64_t source_min, source_max;
     Magic<T> left, right;
     T result;
-    count = 0;
+    // count = 0;
 
     source_min = 0;
     /*
@@ -52,17 +51,10 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
                     break;
                 }
                 result = operation(left.view, right.view);
-                count++;
-                /*
-                if (count % 1000 == 0) {
-                    std::cerr << left.source << '\t' << right.source << std::endl;
-                }
-                //*/
+                // count++;
             }
-            // std::cout << "Got out" << std::endl;
         }
     }
-    // std::cout << result << std::endl;
     finish = std::chrono::high_resolution_clock::now();
 
     return std::chrono::duration_cast<time_unit>(finish - start);
@@ -70,15 +62,17 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation, u
 
 template<typename T>
 void operation_test_wrapper(const std::string& type_label, const std::string& operation_label, const std::function<T(const T&, const T&)> operation, const uint64_t& do_one_over, const uint64_t& repeat) {
-    uint64_t count = -1;
-    auto time = test_operation<T>(operation, count, do_one_over, repeat).count();
+    // uint64_t count = -1;
+    auto time = test_operation<T>(operation,/* count,*/ do_one_over, repeat).count();
 
-    // type, operation, count, time
+    // type, sizeof, operation, time, do_one_over, repeat
     std::forward_list<std::string> data {
         type_label,
+        std::to_string(sizeof(T) * 8),
         operation_label,
-        std::to_string(count),
         std::to_string(time),
+        std::to_string(do_one_over),
+        std::to_string(repeat),
     };
 
     std::cout << data.front();
@@ -102,11 +96,15 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_ove
 
 int main() {
     // count = repeat * (2^bits / do_one_over + 1) * (2^bits / do_one_over) / 2
+    std::cout << "type,size,operation,time,do_one_over,repeat" << std::endl;
 
-    type_test_wrapper<uint8_t>("uint8_t", 1, 1 << 12);
-    type_test_wrapper<uint16_t>("uint16_t", 4, 1);
-    type_test_wrapper<uint32_t>("uint32_t", 261'641, 1);
+    //type_test_wrapper<uint8_t>("uint8_t", 1, 1 << 12);
+    //type_test_wrapper<uint16_t>("uint16_t", 4, 1);
+    //type_test_wrapper<uint32_t>("uint32_t", 261'641, 1);
     type_test_wrapper<uint64_t>("uint64_t", 1'123'741'531'702'044, 1);
+
+    std::cout << "count = repeat * (2^bits / do_one_over + 1) * (2^bits / do_one_over) / 2" << std::endl;
+    std::cout << "do_one_over = repeat * 2^(bits - 2) * (1 + (1 + 8*count/repeat)^0.5) / count" << std::endl;
 
     return 0;
 }
