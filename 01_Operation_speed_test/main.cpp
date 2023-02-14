@@ -1,6 +1,7 @@
 #include <iostream> // input/output
 #include <chrono> // timers
 #include <functional> // std::function<>
+#include <cstring>
 #include <string>
 #include <forward_list> // single-linked list datastructure
 
@@ -9,6 +10,7 @@
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
 #define x100(ex) x10(x10(ex))
 #define x1000(ex) x10(x10(x10(ex)))
+#define xtimes(ex) x10(ex)
 
 template<typename T>
 union Magic {
@@ -16,7 +18,7 @@ union Magic {
     T view;
 };
 
-using time_unit = std::chrono::milliseconds;
+using time_unit = std::chrono::microseconds;
 
 template<typename T>
 time_unit test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
@@ -36,7 +38,7 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation,/*
         for (left.source = 0; !(left.source & overflow); left.source += do_one_over) {
             for (right.source = left.source; !(right.source & overflow); right.source += do_one_over) {
                 //x10(result = operation(left.view, right.view));
-                x1000(result = operation(left.view, right.view));
+                xtimes(result = operation(left.view, right.view));
                 // count++;
             }
         }
@@ -63,7 +65,7 @@ time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uin
         do {
             right.source = left.source;
             do {
-                x1000(result = operation(left.view, right.view));
+                xtimes(result = operation(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -95,7 +97,7 @@ time_unit test_operation(const std::function<int64_t(const int64_t&, const int64
         do {
             right.source = left.source;
             do {
-                x1000(result = operation(left.view, right.view));
+                xtimes(result = operation(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -127,7 +129,7 @@ time_unit test_operation(const std::function<double(const double&, const double&
         do {
             right.source = left.source;
             do {
-                x1000(result = operation(left.view, right.view));
+                xtimes(result = operation(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -167,6 +169,7 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 
 template<typename T>
 void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_over, const uint64_t& repeat) {
+    std::cout << "type,size,operation,time,do_one_over,repeat" << std::endl;
     operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "add", operations::add<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, do_one_over, repeat);
@@ -176,11 +179,60 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_ove
     std::cout << std::endl;
 }
 
-int main() {
-    std::cout << "x = 1000" << std::endl;
-    std::cout << "type,size,operation,time,do_one_over,repeat" << std::endl;
+int main(int argc, const char *argv[]) {
+    //std::cout << "x = 1000" << std::endl;
 
-    //*
+    for (int i = 1; i < argc; i++) {
+        const char* arg = argv[i];
+        if (!strcmp(arg, "uint8_t")) {
+            type_test_wrapper<uint8_t>(arg, 1, 256);
+            continue;
+        }
+        if (!strcmp(arg, "int8_t")) {
+            type_test_wrapper<int8_t>(arg, 1, 256);
+            continue;
+        }
+
+        const uint64_t do_16_over = 18;
+        if (!strcmp(arg, "uint16_t")) {
+            type_test_wrapper<uint16_t>(arg, do_16_over, 1);
+            continue;
+        }
+        if (!strcmp(arg, "int16_t")) {
+            type_test_wrapper<int16_t>(arg, do_16_over, 1);
+            continue;
+        }
+
+        const uint64_t do_32_over = 1'200'481;
+        if (!strcmp(arg, "uint32_t")) {
+            type_test_wrapper<uint32_t>(arg, do_32_over, 1);
+            continue;
+        }
+        if (!strcmp(arg, "int32_t")) {
+            type_test_wrapper<int32_t>(arg, do_32_over, 1);
+            continue;
+        }
+        if (!strcmp(arg, "float")) {
+            type_test_wrapper<float>(arg, do_32_over, 1);
+            continue;
+        }
+
+        const uint64_t do_64_over = 5'156'024'596'349'061;
+        if (!strcmp(arg, "uint64_t")) {
+            type_test_wrapper<uint64_t>(arg, do_64_over, 1);
+            continue;
+        }
+        if (!strcmp(arg, "int64_t")) {
+            type_test_wrapper<int64_t>(arg, do_64_over, 1);
+            continue;
+        }
+        if (!strcmp(arg, "double")) {
+            type_test_wrapper<double>(arg, do_64_over, 1);
+            continue;
+        }
+    }
+
+    /*
     type_test_wrapper<uint8_t>("uint8_t", 1, 256);
     type_test_wrapper<int8_t>("int8_t", 1, 256);
 
