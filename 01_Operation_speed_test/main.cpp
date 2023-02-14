@@ -7,6 +7,8 @@
 #include "operations.cpp" // my operation templates
 
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
+#define x100(ex) x10(x10(ex))
+#define x1000(ex) x10(x10(x10(ex)))
 
 template<typename T>
 union Magic {
@@ -14,7 +16,7 @@ union Magic {
     T view;
 };
 
-using time_unit = std::chrono::microseconds;
+using time_unit = std::chrono::milliseconds;
 
 template<typename T>
 time_unit test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
@@ -33,7 +35,8 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation,/*
     while (repeat--) {
         for (left.source = 0; !(left.source & overflow); left.source += do_one_over) {
             for (right.source = left.source; !(right.source & overflow); right.source += do_one_over) {
-                x10(result = operation(left.view, right.view));
+                //x10(result = operation(left.view, right.view));
+                x1000(result = operation(left.view, right.view));
                 // count++;
             }
         }
@@ -60,16 +63,14 @@ time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uin
         do {
             right.source = left.source;
             do {
-                x10(result = operation(left.view, right.view));
-                if (right.source + do_one_over < right.source) {
+                x1000(result = operation(left.view, right.view));
+                if (right.source > (right.source += do_one_over)) {
                     break;
                 }
-                right.source += do_one_over;
             } while(1);
-            if (left.source + do_one_over < left.source) {
+            if (left.source > (left.source += do_one_over)) {
                 break;
             }
-            left.source += do_one_over;
         } while(1);
     }
     finish = std::chrono::high_resolution_clock::now();
@@ -94,18 +95,18 @@ time_unit test_operation(const std::function<int64_t(const int64_t&, const int64
         do {
             right.source = left.source;
             do {
-                x10(result = operation(left.view, right.view));
-                if (right.source + do_one_over < right.source) {
+                x1000(result = operation(left.view, right.view));
+                if (right.source > (right.source += do_one_over)) {
                     break;
                 }
-                right.source += do_one_over;
             } while(1);
-            if (left.source + do_one_over < left.source) {
+            if (left.source > (left.source += do_one_over)) {
                 break;
             }
-            left.source += do_one_over;
         } while(1);
     }
+    finish = std::chrono::high_resolution_clock::now();
+
     return std::chrono::duration_cast<time_unit>(finish - start);
 }
 
@@ -126,16 +127,14 @@ time_unit test_operation(const std::function<double(const double&, const double&
         do {
             right.source = left.source;
             do {
-                x10(result = operation(left.view, right.view));
-                if (right.source + do_one_over < right.source) {
+                x1000(result = operation(left.view, right.view));
+                if (right.source > (right.source += do_one_over)) {
                     break;
                 }
-                right.source += do_one_over;
             } while(1);
-            if (left.source + do_one_over < left.source) {
+            if (left.source > (left.source += do_one_over)) {
                 break;
             }
-            left.source += do_one_over;
         } while(1);
     }
     finish = std::chrono::high_resolution_clock::now();
@@ -178,25 +177,26 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_ove
 }
 
 int main() {
+    std::cout << "x = 1000" << std::endl;
     std::cout << "type,size,operation,time,do_one_over,repeat" << std::endl;
 
-    /*
-    type_test_wrapper<uint8_t>("uint8_t", 0, (uint64_t)1 << 8); // 1, 1 << 12
-    type_test_wrapper<int8_t>("int8_t", 0, (uint64_t)1 << 12);
+    //*
+    type_test_wrapper<uint8_t>("uint8_t", 1, 256);
+    type_test_wrapper<int8_t>("int8_t", 1, 256);
 
-    type_test_wrapper<uint16_t>("uint16_t", 1, 2); // 4, 1
-    type_test_wrapper<int16_t>("int16_t", 1, 2);
+    const uint64_t do_16_over = 18;
+    type_test_wrapper<uint16_t>("uint16_t", do_16_over, 1); // 4, 1
+    type_test_wrapper<int16_t>("int16_t", do_16_over, 1);
 
-    uint64_t do_32_over = 47'768; // 261'641
+    const uint64_t do_32_over = 1'200'481;
     type_test_wrapper<uint32_t>("uint32_t", do_32_over, 1);
     type_test_wrapper<int32_t>("int32_t", do_32_over, 1);
     type_test_wrapper<float>("float", do_32_over, 1);
-    //*/
 
-    uint64_t do_64_over = 5'123'741'531'702'044;//205'161'087'223'729;
+    const uint64_t do_64_over = 5'156'024'596'349'061;
     type_test_wrapper<uint64_t>("uint64_t", do_64_over, 1);
-    //type_test_wrapper<int64_t>("int64_t", do_64_over, 1);
-    //type_test_wrapper<double>("double", do_64_over, 1);
+    type_test_wrapper<int64_t>("int64_t", do_64_over, 1);
+    type_test_wrapper<double>("double", do_64_over, 1);
     //*/
 
     // std::cout << "count = repeat * (2^bits / do_one_over + 1) * (2^bits / do_one_over) / 2" << std::endl;
