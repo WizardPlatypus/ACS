@@ -10,7 +10,7 @@
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
 #define x100(ex) x10(x10(ex))
 #define x1000(ex) x10(x10(x10(ex)))
-#define xtimes(ex) x10(ex)
+#define xtimes(ex) x1000(ex)
 
 template<typename T>
 union Magic {
@@ -153,10 +153,10 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
     std::forward_list<std::string> data {
         type_label,
         std::to_string(sizeof(T) * 8),
-        operation_label,
-        std::to_string(time),
         std::to_string(do_one_over),
         std::to_string(repeat),
+        operation_label,
+        std::to_string(time),
     };
 
     std::cout << data.front();
@@ -169,21 +169,26 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 
 template<typename T>
 void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_over, const uint64_t& repeat) {
-    std::cout << "type,size,operation,time,do_one_over,repeat" << std::endl;
     operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "add", operations::add<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, do_one_over, repeat);
     operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, do_one_over, repeat);
-    std::cout << std::endl;
 }
 
 int main(int argc, const char *argv[]) {
-    //std::cout << "x = 1000" << std::endl;
 
-    for (int i = 1; i < argc; i++) {
+    for (int i = 2; i < argc; i++) {
         const char* arg = argv[i];
+
+        if (!strcmp(arg, "labels")) {
+            std::cout << "type,size,do_one_over,repeat,operation,time" << std::endl;
+        }
+        if (!strcmp(arg, "x")) {
+            std::cout << "x = 1000" << std::endl;
+        }
+
         if (!strcmp(arg, "uint8_t")) {
             type_test_wrapper<uint8_t>(arg, 1, 256);
             continue;
