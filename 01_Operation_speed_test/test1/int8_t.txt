@@ -1,0 +1,6 @@
+int8_t,8,1,256,nothing,25241444
+int8_t,8,1,256,add,25220443
+int8_t,8,1,256,subtract,24895424
+int8_t,8,1,256,multiply,25255444
+int8_t,8,1,256,divide,28079606
+int8_t,8,1,256,modulo,28849650
