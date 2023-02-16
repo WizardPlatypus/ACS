@@ -179,7 +179,7 @@ void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_ove
 
 int main(int argc, const char *argv[]) {
 
-    for (int i = 2; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         const char* arg = argv[i];
 
         if (!strcmp(arg, "labels")) {
