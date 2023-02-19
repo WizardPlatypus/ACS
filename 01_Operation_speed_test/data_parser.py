@@ -36,12 +36,18 @@ def make_table(file, x):
 
         # print(nothing)
 
-        count = calc_count(get_size(nothing), get_skip(nothing), get_repeat(nothing), x)
         table_row = {}
         for test in rest:
+            count = calc_count(get_size(test), get_skip(test), get_repeat(test), x)
             time = get_time(test) - get_time(nothing)
-            speed = (count / time) if time > 0 else 0
-            table_row[get_operation(test)] = speed
+            # speed = (count / time) if time > 0 else 0
+            operation = get_operation(test)
+
+            if operation in table_row:
+                old_count, old_time = table_row[operation]
+                table_row[operation] = (old_count + count, old_time + time)
+            table_row[operation] = (count, time)
+
         table[get_type(nothing)] = table_row
 
         nothing = get_data(file)
@@ -60,28 +66,31 @@ def main():
         row = ["----"]
         for operation in table[_type]:
             row.append(operation)
-        print(*row)
+        print(*row, sep=" & ", end=" \\\\\n")
         break
 
-    total_speed = -1
-    counter = 0
+    # total_speed = -1
+    # counter = 0
+    max_speed = -1
     for _type in table:
         for operation in table[_type]:
-            speed = table[_type][operation]
-            # max_speed = speed if speed > max_speed else max_speed
-            if speed <= 0:
-                continue
-            total_speed += speed
-            counter += 1
+            count, time = table[_type][operation]
+            speed = (count / time) if time > 0 else 0
+            max_speed = speed if speed > max_speed else max_speed
+            # if speed <= 0:
+            #     continue
+            # total_speed += speed
+            # counter += 1
     
-    avg_speed = total_speed / counter
+    # avg_speed = total_speed / counter
 
     for _type in table:
         row = [_type]
         for operation in table[_type]:
-            speed = table[_type][operation]
-            row.append(round(speed / avg_speed, 2))
-        print(*row)
+            count, time = table[_type][operation]
+            speed = ((count / time) / max_speed) if time > 0 else -1
+            row.append(round(speed, 3))
+        print(*row, sep=" & ", end=" \\\\\n")
 
 if __name__ == "__main__":
     main()

@@ -10,7 +10,7 @@
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
 #define x100(ex) x10(x10(ex))
 #define x1000(ex) x10(x10(x10(ex)))
-#define xtimes(ex) x1000(ex)
+#define xtimes(ex) x1000(ex); x1000(ex)
 
 template<typename T>
 union Magic {
@@ -184,21 +184,23 @@ int main(int argc, const char *argv[]) {
 
         if (!strcmp(arg, "labels")) {
             std::cout << "type,size,do_one_over,repeat,operation,time" << std::endl;
+            continue;
         }
         if (!strcmp(arg, "x")) {
             std::cout << "x = 1000" << std::endl;
+            continue;
         }
 
         if (!strcmp(arg, "uint8_t")) {
-            type_test_wrapper<uint8_t>(arg, 1, 256);
+            type_test_wrapper<uint8_t>(arg, 1, 48);
             continue;
         }
         if (!strcmp(arg, "int8_t")) {
-            type_test_wrapper<int8_t>(arg, 1, 256);
+            type_test_wrapper<int8_t>(arg, 1, 48);
             continue;
         }
 
-        const uint64_t do_16_over = 18;
+        const uint64_t do_16_over = 18 * 6;
         if (!strcmp(arg, "uint16_t")) {
             type_test_wrapper<uint16_t>(arg, do_16_over, 1);
             continue;
@@ -208,7 +210,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_32_over = 1'200'481;
+        const uint64_t do_32_over = 1'200'481 * 6;
         if (!strcmp(arg, "uint32_t")) {
             type_test_wrapper<uint32_t>(arg, do_32_over, 1);
             continue;
@@ -222,7 +224,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_64_over = 5'156'024'596'349'061;
+        const uint64_t do_64_over = 5'156'024'596'349'061 * 6;
         if (!strcmp(arg, "uint64_t")) {
             type_test_wrapper<uint64_t>(arg, do_64_over, 1);
             continue;
