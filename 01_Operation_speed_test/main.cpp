@@ -21,51 +21,52 @@ union Magic {
 using time_unit = std::chrono::microseconds;
 
 template<typename T>
-time_unit test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+long long test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
 
     std::chrono::high_resolution_clock::time_point start, finish;
+    long long time{0};
     Magic<T> left, right;
     T result;
-    // count = 0;
 
     uint64_t overflow = (uint64_t)1 << (sizeof(T)*8); // 0001 -> 1'0000 // -x> 0'1111
 
-    start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
         for (left.source = 0; !(left.source & overflow); left.source += do_one_over) {
             for (right.source = left.source; !(right.source & overflow); right.source += do_one_over) {
-                //x10(result = operation(left.view, right.view));
+                start = std::chrono::high_resolution_clock::now();
                 xtimes(result = operation(left.view, right.view));
-                // count++;
+                finish = std::chrono::high_resolution_clock::now();
+                time += std::chrono::duration_cast<time_unit>(finish - start).count();
             }
         }
     }
-    finish = std::chrono::high_resolution_clock::now();
 
-    return std::chrono::duration_cast<time_unit>(finish - start);
+    return time;
 }
 
 template<>
-time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uint64_t&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+long long test_operation(const std::function<uint64_t(const uint64_t&, const uint64_t&)> operation, uint64_t do_one_over, uint64_t repeat) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
 
     std::chrono::high_resolution_clock::time_point start, finish;
+    long long time{0};
     Magic<uint64_t> left, right;
     uint64_t result;
-    // count = 0;
 
-    start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
         left.source = 0;
         do {
             right.source = left.source;
             do {
+                start = std::chrono::high_resolution_clock::now();
                 xtimes(result = operation(left.view, right.view));
+                finish = std::chrono::high_resolution_clock::now();
+                time += std::chrono::duration_cast<time_unit>(finish - start).count();
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -75,29 +76,30 @@ time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uin
             }
         } while(1);
     }
-    finish = std::chrono::high_resolution_clock::now();
 
-    return std::chrono::duration_cast<time_unit>(finish - start);
+    return time;
 }
 
 template<>
-time_unit test_operation(const std::function<int64_t(const int64_t&, const int64_t&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+long long test_operation(const std::function<int64_t(const int64_t&, const int64_t&)> operation, uint64_t do_one_over, uint64_t repeat) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
 
     std::chrono::high_resolution_clock::time_point start, finish;
+    long long time{0};
     Magic<int64_t> left, right;
     int64_t result;
-    // count = 0;
 
-    start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
         left.source = 0;
         do {
             right.source = left.source;
             do {
+                start = std::chrono::high_resolution_clock::now();
                 xtimes(result = operation(left.view, right.view));
+                finish = std::chrono::high_resolution_clock::now();
+                time += std::chrono::duration_cast<time_unit>(finish - start).count();
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -107,29 +109,30 @@ time_unit test_operation(const std::function<int64_t(const int64_t&, const int64
             }
         } while(1);
     }
-    finish = std::chrono::high_resolution_clock::now();
 
-    return std::chrono::duration_cast<time_unit>(finish - start);
+    return time;
 }
 
 template<>
-time_unit test_operation(const std::function<double(const double&, const double&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+long long test_operation(const std::function<double(const double&, const double&)> operation, uint64_t do_one_over, uint64_t repeat) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
 
     std::chrono::high_resolution_clock::time_point start, finish;
+    long long time{0};
     Magic<double> left, right;
     double result;
-    // count = 0;
 
-    start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
         left.source = 0;
         do {
             right.source = left.source;
             do {
+                start = std::chrono::high_resolution_clock::now();
                 xtimes(result = operation(left.view, right.view));
+                finish = std::chrono::high_resolution_clock::now();
+                time += std::chrono::duration_cast<time_unit>(finish - start).count();
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -139,15 +142,13 @@ time_unit test_operation(const std::function<double(const double&, const double&
             }
         } while(1);
     }
-    finish = std::chrono::high_resolution_clock::now();
 
-    return std::chrono::duration_cast<time_unit>(finish - start);
+    return time;
 }
 
 template<typename T>
 void operation_test_wrapper(const std::string& type_label, const std::string& operation_label, const std::function<T(const T&, const T&)> operation, const uint64_t& do_one_over, const uint64_t& repeat) {
-    // uint64_t count = -1;
-    auto time = test_operation<T>(operation,/* count,*/ do_one_over, repeat).count();
+    auto time = test_operation<T>(operation,/* count,*/ do_one_over, repeat);
 
     // type, sizeof, operation, time, do_one_over, repeat
     std::forward_list<std::string> data {
