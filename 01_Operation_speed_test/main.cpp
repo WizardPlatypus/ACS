@@ -14,22 +14,22 @@
 // #define OP_MODULO 5
 
 #if OP_TYPE == OP_NOTHING
-#define OP(a, b) (0)
+#define OP(r, a, b) ;
 #define OP_LABEL ("nothing")
 #elif OP_TYPE == OP_ADD
-#define OP(a, b) ((a) + (b))
+#define OP(r, a, b) (r = (a) + (b))
 #define OP_LABEL ("add")
 #elif OP_TYPE == OP_SUBTRACT
-#define OP(a, b) ((a) - (b))
+#define OP(r, a, b) (r = (a) - (b))
 #define OP_LABEL ("subtract")
 #elif OP_TYPE == OP_MULTIPLY
-#define OP(a, b) ((a) * (b))
+#define OP(r, a, b) (r = (a) * (b))
 #define OP_LABEL ("multiply")
 #elif OP_TYPE == OP_DIVIDE
-#define OP(a, b) ((a) / (b))
+#define OP(r, a, b) (r = (a) / (b))
 #define OP_LABEL ("divide")
 //#elif OP_TYPE == OP_MODULO
-//#define OP(a, b) ((b) == 0 ? 0 : (a) % (b))
+//#define OP(r, a, b) (r = (b) == 0 ? 0 : (a) % (b))
 //#define OP_LABEL ("modulo")
 #endif
 
@@ -62,7 +62,7 @@ time_unit test(uint64_t repeat) {
             right.source = 1;
         }
         #endif
-        xtimes(result = OP(left.view, right.view));
+        xtimes(OP(result, left.view, right.view));
     }
     finish = std::chrono::high_resolution_clock::now();
 
@@ -102,7 +102,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t repeat = (1 << 16);
+        const uint64_t repeat = (1ULL << 24);
 
         if (!strcmp(arg, "uint8_t")) {
             test_wrapper<uint8_t>(arg, repeat);
@@ -113,7 +113,6 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_16_over = 8;
         if (!strcmp(arg, "uint16_t")) {
             test_wrapper<uint16_t>(arg, repeat);
             continue;
@@ -123,7 +122,6 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_32_over = do_16_over << 16;
         if (!strcmp(arg, "uint32_t")) {
             test_wrapper<uint32_t>(arg, repeat);
             continue;
@@ -137,7 +135,6 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_64_over = do_32_over << 32;
         if (!strcmp(arg, "uint64_t")) {
             test_wrapper<uint64_t>(arg, repeat);
             continue;
