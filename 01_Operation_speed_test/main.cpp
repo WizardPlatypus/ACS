@@ -4,7 +4,7 @@
 #include <string>
 #include <forward_list> // single-linked list datastructure
 
-#include "mt19937-64.c"
+#include "mt19937-64.c" // Mesenne Twister — PRNG
 
 #define OP_NOTHING 0
 #define OP_ADD 1
@@ -36,8 +36,8 @@
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
 #define x100(ex) x10(x10(ex))
 #define x1000(ex) x10(x10(x10(ex)))
-#define xtimes(ex) x1000(ex);
-#define XTIMES_LABEL ("1000")
+#define xtimes(ex) x1000(ex); x1000(ex)
+#define XTIMES_LABEL ("2000")
 
 template<typename T>
 union Magic {
@@ -48,7 +48,7 @@ union Magic {
 using time_unit = std::chrono::microseconds;
 
 template<typename T>
-time_unit test_operation(uint64_t repeat) {
+time_unit test(uint64_t repeat) {
     std::chrono::high_resolution_clock::time_point start, finish;
     Magic<T> left, right;
     T result;
@@ -70,8 +70,8 @@ time_unit test_operation(uint64_t repeat) {
 }
 
 template<typename T>
-void operation_test_wrapper(const std::string& type_label, const uint64_t& repeat) {
-    auto time = test_operation<T>(repeat).count();
+void test_wrapper(const std::string& type_label, const uint64_t& repeat) {
+    auto time = test<T>(repeat).count();
 
     std::forward_list<std::string> data {
         type_label,
@@ -90,11 +90,6 @@ void operation_test_wrapper(const std::string& type_label, const uint64_t& repea
     std::cout << std::endl;
 }
 
-template<typename T>
-void type_test_wrapper(const std::string& type_label, const uint64_t& repeat) {
-    operation_test_wrapper<T>(type_label, repeat);
-}
-
 int main(int argc, const char *argv[]) {
     unsigned long long init[4]={0x12345ULL, 0x23456ULL, 0x34567ULL, 0x45678ULL}, length=4;
     init_by_array64(init, length);
@@ -108,50 +103,51 @@ int main(int argc, const char *argv[]) {
         }
 
         const uint64_t repeat = (1 << 16);
+
         if (!strcmp(arg, "uint8_t")) {
-            type_test_wrapper<uint8_t>(arg, repeat);
+            test_wrapper<uint8_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "int8_t")) {
-            type_test_wrapper<int8_t>(arg, repeat);
+            test_wrapper<int8_t>(arg, repeat);
             continue;
         }
 
         const uint64_t do_16_over = 8;
         if (!strcmp(arg, "uint16_t")) {
-            type_test_wrapper<uint16_t>(arg, repeat);
+            test_wrapper<uint16_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "int16_t")) {
-            type_test_wrapper<int16_t>(arg, repeat);
+            test_wrapper<int16_t>(arg, repeat);
             continue;
         }
 
         const uint64_t do_32_over = do_16_over << 16;
         if (!strcmp(arg, "uint32_t")) {
-            type_test_wrapper<uint32_t>(arg, repeat);
+            test_wrapper<uint32_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "int32_t")) {
-            type_test_wrapper<int32_t>(arg, repeat);
+            test_wrapper<int32_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "float")) {
-            type_test_wrapper<float>(arg, repeat);
+            test_wrapper<float>(arg, repeat);
             continue;
         }
 
         const uint64_t do_64_over = do_32_over << 32;
         if (!strcmp(arg, "uint64_t")) {
-            type_test_wrapper<uint64_t>(arg, repeat);
+            test_wrapper<uint64_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "int64_t")) {
-            type_test_wrapper<int64_t>(arg, repeat);
+            test_wrapper<int64_t>(arg, repeat);
             continue;
         }
         if (!strcmp(arg, "double")) {
-            type_test_wrapper<double>(arg, repeat);
+            test_wrapper<double>(arg, repeat);
             continue;
         }
     }
