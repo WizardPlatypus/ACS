@@ -5,12 +5,39 @@
 #include <string>
 #include <forward_list> // single-linked list datastructure
 
-#include "operations.cpp" // my operation templates
+#define OP_NOTHING 0
+#define OP_ADD 1
+#define OP_SUBTRACT 2
+#define OP_MULTIPLY 3
+#define OP_DIVIDE 4
+// #define OP_MODULO 5
+
+// #define OP_TYPE OP_ADD
+
+#if OP_TYPE == OP_NOTHING
+#define OP(a, b) (0)
+#define OP_LABEL ("nothing")
+#elif OP_TYPE == OP_ADD
+#define OP(a, b) ((a) + (b))
+#define OP_LABEL ("add")
+#elif OP_TYPE == OP_SUBTRACT
+#define OP(a, b) ((a) - (b))
+#define OP_LABEL ("subtract")
+#elif OP_TYPE == OP_MULTIPLY
+#define OP(a, b) ((a) * (b))
+#define OP_LABEL ("multiply")
+#elif OP_TYPE == OP_DIVIDE
+#define OP(a, b) ((b) == 0 ? 0 : (a) / (b))
+#define OP_LABEL ("divide")
+//#elif OP_TYPE == OP_MODULO
+//#define OP(a, b) ((b) == 0 ? 0 : (a) % (b))
+//#define OP_LABEL ("modulo")
+#endif
 
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
 #define x100(ex) x10(x10(ex))
 #define x1000(ex) x10(x10(x10(ex)))
-#define xtimes(ex) x1000(ex); x1000(ex)
+#define xtimes(ex) x1000(ex);
 
 template<typename T>
 union Magic {
@@ -21,7 +48,7 @@ union Magic {
 using time_unit = std::chrono::microseconds;
 
 template<typename T>
-time_unit test_operation(const std::function<T(const T&, const T&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+time_unit test_operation(uint64_t do_one_over, uint64_t repeat, T _type_value = 0) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
@@ -38,7 +65,7 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation,/*
         for (left.source = 0; !(left.source & overflow); left.source += do_one_over) {
             for (right.source = left.source; !(right.source & overflow); right.source += do_one_over) {
                 //x10(result = operation(left.view, right.view));
-                xtimes(result = operation(left.view, right.view));
+                xtimes(result = OP(left.view, right.view));
                 // count++;
             }
         }
@@ -49,7 +76,7 @@ time_unit test_operation(const std::function<T(const T&, const T&)> operation,/*
 }
 
 template<>
-time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uint64_t&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+time_unit test_operation(uint64_t do_one_over, uint64_t repeat, uint64_t _type_value) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
@@ -65,7 +92,7 @@ time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uin
         do {
             right.source = left.source;
             do {
-                xtimes(result = operation(left.view, right.view));
+                xtimes(result = OP(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -81,7 +108,7 @@ time_unit test_operation(const std::function<uint64_t(const uint64_t&, const uin
 }
 
 template<>
-time_unit test_operation(const std::function<int64_t(const int64_t&, const int64_t&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+time_unit test_operation(uint64_t do_one_over, uint64_t repeat, int64_t _type_value) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
@@ -97,7 +124,7 @@ time_unit test_operation(const std::function<int64_t(const int64_t&, const int64
         do {
             right.source = left.source;
             do {
-                xtimes(result = operation(left.view, right.view));
+                xtimes(result = OP(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -113,7 +140,7 @@ time_unit test_operation(const std::function<int64_t(const int64_t&, const int64
 }
 
 template<>
-time_unit test_operation(const std::function<double(const double&, const double&)> operation,/* uint64_t& count,*/ uint64_t do_one_over, uint64_t repeat) {
+time_unit test_operation(uint64_t do_one_over, uint64_t repeat, double _type_value) {
     if (do_one_over < 1) {
         do_one_over = 1;
     }
@@ -129,7 +156,7 @@ time_unit test_operation(const std::function<double(const double&, const double&
         do {
             right.source = left.source;
             do {
-                xtimes(result = operation(left.view, right.view));
+                xtimes(result = OP(left.view, right.view));
                 if (right.source > (right.source += do_one_over)) {
                     break;
                 }
@@ -145,9 +172,8 @@ time_unit test_operation(const std::function<double(const double&, const double&
 }
 
 template<typename T>
-void operation_test_wrapper(const std::string& type_label, const std::string& operation_label, const std::function<T(const T&, const T&)> operation, const uint64_t& do_one_over, const uint64_t& repeat) {
-    // uint64_t count = -1;
-    auto time = test_operation<T>(operation,/* count,*/ do_one_over, repeat).count();
+void operation_test_wrapper(const std::string& type_label, const uint64_t& do_one_over, const uint64_t& repeat) {
+    auto time = test_operation<T>(do_one_over, repeat).count();
 
     // type, sizeof, operation, time, do_one_over, repeat
     std::forward_list<std::string> data {
@@ -155,7 +181,7 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
         std::to_string(sizeof(T) * 8),
         std::to_string(do_one_over),
         std::to_string(repeat),
-        operation_label,
+        OP_LABEL,
         std::to_string(time),
     };
 
@@ -169,12 +195,7 @@ void operation_test_wrapper(const std::string& type_label, const std::string& op
 
 template<typename T>
 void type_test_wrapper(const std::string& type_label, const uint64_t& do_one_over, const uint64_t& repeat) {
-    operation_test_wrapper<T>(type_label, "nothing", operations::nothing<T>, do_one_over, repeat);
-    operation_test_wrapper<T>(type_label, "add", operations::add<T>, do_one_over, repeat);
-    operation_test_wrapper<T>(type_label, "subtract", operations::subtract<T>, do_one_over, repeat);
-    operation_test_wrapper<T>(type_label, "multiply", operations::multiply<T>, do_one_over, repeat);
-    operation_test_wrapper<T>(type_label, "divide", operations::divide<T>, do_one_over, repeat);
-    operation_test_wrapper<T>(type_label, "modulo", operations::modulo<T>, do_one_over, repeat);
+    operation_test_wrapper<T>(type_label, do_one_over, repeat);
 }
 
 int main(int argc, const char *argv[]) {
@@ -238,28 +259,6 @@ int main(int argc, const char *argv[]) {
             continue;
         }
     }
-
-    /*
-    type_test_wrapper<uint8_t>("uint8_t", 1, 256);
-    type_test_wrapper<int8_t>("int8_t", 1, 256);
-
-    const uint64_t do_16_over = 18;
-    type_test_wrapper<uint16_t>("uint16_t", do_16_over, 1); // 4, 1
-    type_test_wrapper<int16_t>("int16_t", do_16_over, 1);
-
-    const uint64_t do_32_over = 1'200'481;
-    type_test_wrapper<uint32_t>("uint32_t", do_32_over, 1);
-    type_test_wrapper<int32_t>("int32_t", do_32_over, 1);
-    type_test_wrapper<float>("float", do_32_over, 1);
-
-    const uint64_t do_64_over = 5'156'024'596'349'061;
-    type_test_wrapper<uint64_t>("uint64_t", do_64_over, 1);
-    type_test_wrapper<int64_t>("int64_t", do_64_over, 1);
-    type_test_wrapper<double>("double", do_64_over, 1);
-    //*/
-
-    // std::cout << "count = repeat * (2^bits / do_one_over + 1) * (2^bits / do_one_over) / 2" << std::endl;
-    // std::cout << "do_one_over = repeat * 2^(bits - 2) * (1 + (1 + 8*count/repeat)^0.5) / count" << std::endl;
 
     return 0;
 }

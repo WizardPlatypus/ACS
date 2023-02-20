@@ -1,18 +1,16 @@
 ./build.sh
 
-testdir="test4"
+testdir="temp"
+if [ "$testdir" == "temp" ]; then
+    rm data/temp/*
+fi
 
-echo "uint8_t" && ./main.exe uint8_t >> data/$testdir/uint8_t.txt
-echo "int8_t" && ./main.exe int8_t >> data/$testdir/int8_t.txt
+execs=bin/*
+declare -a types=("uint8_t" "int8_t" "uint16_t" "int16_t" "uint32_t" "int32_t" "float" "uint64_t" "int64_t" "double")
 
-echo "uint16_t" && ./main.exe uint16_t >> data/$testdir/uint16_t.txt
-echo "int16_t" && ./main.exe int16_t >> data/$testdir/int16_t.txt
-
-echo "uint32_t" && ./main.exe uint32_t >> data/$testdir/uint32_t.txt
-echo "int32_t" && ./main.exe int32_t >> data/$testdir/int32_t.txt
-echo "float" && ./main.exe float >> data/$testdir/float.txt
-
-echo "uint64_t" && ./main.exe uint64_t >> data/$testdir/uint64_t.txt
-echo "int64_t" && ./main.exe int64_t >> data/$testdir/int64_t.txt
-echo "double" && ./main.exe double >> data/$testdir/double.txt
-
+for exec in $execs; do
+    for type in "${types[@]}"; do
+        echo "$exec $type >> data/$testdir/$type.txt"
+        $exec $type >> data/$testdir/$type.txt
+    done
+done
