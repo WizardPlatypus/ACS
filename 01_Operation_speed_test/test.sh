@@ -1,6 +1,11 @@
 ./build.sh
 
-testdir="temp"
+testdir=$1
+
+if [ -z "$testdir" ]; then
+    testdir="temp"
+fi
+
 if [ "$testdir" == "temp" ]; then
     rm data/temp/*
 fi
