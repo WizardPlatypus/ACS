@@ -11,7 +11,7 @@
 #define OP_SUBTRACT 2
 #define OP_MULTIPLY 3
 #define OP_DIVIDE 4
-// #define OP_MODULO 5
+#define OP_MODULO 5
 
 #if OP_TYPE == OP_NOTHING
 #define OP(r, a, b) ;
@@ -28,9 +28,9 @@
 #elif OP_TYPE == OP_DIVIDE
 #define OP(r, a, b) (r = (a) / (b))
 #define OP_LABEL ("divide")
-//#elif OP_TYPE == OP_MODULO
-//#define OP(r, a, b) (r = (b) == 0 ? 0 : (a) % (b))
-//#define OP_LABEL ("modulo")
+#elif OP_TYPE == OP_MODULO
+#define OP(r, a, b) (r = (a) % (b))
+#define OP_LABEL ("modulo")
 #endif
 
 #define x10(ex) ex; ex; ex; ex; ex; ex; ex; ex; ex; ex
@@ -57,7 +57,7 @@ time_unit test(uint64_t repeat) {
     while (repeat--) {
         left.source = genrand64_int64();
         right.source = genrand64_int64();
-        #if OP_TYPE == OP_DIVIDE
+        #if OP_TYPE == OP_DIVIDE || OP_TYPE == OP_MODULO
         if (right.view == 0) {
             right.source = 1;
         }
@@ -72,6 +72,27 @@ time_unit test(uint64_t repeat) {
 template<typename T>
 void test_wrapper(const std::string& type_label, const uint64_t& repeat) {
     auto time = test<T>(repeat).count();
+
+    std::forward_list<std::string> data {
+        type_label,
+        std::to_string(sizeof(T) * 8),
+        XTIMES_LABEL,
+        std::to_string(repeat),
+        OP_LABEL,
+        std::to_string(time),
+    };
+
+    std::cout << data.front();
+    data.pop_front();
+    for (auto item: data) {
+        std::cout << "," << item;
+    }
+    std::cout << std::endl;
+}
+
+template<typename T>
+void dummy(const std::string& type_label, const uint64_t& repeat) {
+    auto time = 0;
 
     std::forward_list<std::string> data {
         type_label,
@@ -130,10 +151,6 @@ int main(int argc, const char *argv[]) {
             test_wrapper<int32_t>(arg, repeat);
             continue;
         }
-        if (!strcmp(arg, "float")) {
-            test_wrapper<float>(arg, repeat);
-            continue;
-        }
 
         if (!strcmp(arg, "uint64_t")) {
             test_wrapper<uint64_t>(arg, repeat);
@@ -143,10 +160,26 @@ int main(int argc, const char *argv[]) {
             test_wrapper<int64_t>(arg, repeat);
             continue;
         }
+
+        #if OP_TYPE == OP_MODULO
+        if (!strcmp(arg, "float")) {
+            dummy<float>(arg, repeat);
+            continue;
+        }
+        if (!strcmp(arg, "double")) {
+            dummy<double>(arg, repeat);
+            continue;
+        }
+        #else
+        if (!strcmp(arg, "float")) {
+            test_wrapper<float>(arg, repeat);
+            continue;
+        }
         if (!strcmp(arg, "double")) {
             test_wrapper<double>(arg, repeat);
             continue;
         }
+        #endif
     }
 
     return 0;

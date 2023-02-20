@@ -28,6 +28,7 @@ def make_table(file):
             get_data(file),
             get_data(file),
             get_data(file),
+            get_data(file),
         ]
 
         nothing = []
