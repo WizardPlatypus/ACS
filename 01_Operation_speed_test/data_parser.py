@@ -7,7 +7,7 @@ def get_type(data):
     return data[0]
 def get_size(data):
     return int(data[1])
-def get_skip(data):
+def get_x(data):
     return int(data[2])
 def get_repeat(data):
     return int(data[3])
@@ -16,40 +16,44 @@ def get_operation(data):
 def get_time(data):
     return int(data[5])
 
-def calc_count(size, skip, rept, x):
-    # op_count = repeat * (2^bit_count / do_one_over + 1) * (2^bit_count / do_one_over) / 2
-    return rept * ((pow(2, size) // skip) * x) * ((pow(2, size) // skip) * x + 1) / 2
-
 def make_table(file, x):
     # table = {"type": {"operation": "speed"}}
     table = {}
 
-    nothing = get_data(file)
-    while len(nothing) > 0:
-        rest = [
+    data = get_data(file)
+    while len(data) > 0:
+        tests = [
+            data,
             get_data(file),
             get_data(file),
             get_data(file),
             get_data(file),
         ]
 
-        # print(nothing)
+        nothing = []
+        for test in tests:
+            if get_operation(test) == "nothing":
+                nothing = test
+                break
 
         table_row = {}
-        for test in rest:
-            count = calc_count(get_size(test), get_skip(test), get_repeat(test), x)
+        for test in tests:
+            if get_operation(test) == "nothing":
+                continue
+
+            count = get_repeat(test) * get_x(test)
             time = get_time(test) - get_time(nothing)
-            # speed = (count / time) if time > 0 else 0
             operation = get_operation(test)
 
             if operation in table_row:
                 old_count, old_time = table_row[operation]
                 table_row[operation] = (old_count + count, old_time + time)
-            table_row[operation] = (count, time)
+            else:
+                table_row[operation] = (count, time)
 
         table[get_type(nothing)] = table_row
 
-        nothing = get_data(file)
+        data = get_data(file)
 
     return table
 
