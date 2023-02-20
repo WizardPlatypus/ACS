@@ -16,7 +16,7 @@ def get_operation(data):
 def get_time(data):
     return int(data[5])
 
-def make_table(file, x):
+def make_table(file):
     # table = {"type": {"operation": "speed"}}
     table = {}
 
@@ -61,9 +61,8 @@ def make_table(file, x):
 def main():
     filename = sys.argv[1]
     file = open(filename)
-    x = int(sys.argv[2])
 
-    table = make_table(file, x)
+    table = make_table(file)
 
     for _type in table:
         row = ["----"]
