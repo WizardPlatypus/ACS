@@ -66,7 +66,9 @@ def main():
         row = ["----"]
         for operation in table[_type]:
             row.append(operation)
+        print("\\hline")
         print(*row, sep=" & ", end=" \\\\\n")
+        print("\\hline")
         break
 
     # total_speed = -1
@@ -85,12 +87,13 @@ def main():
     # avg_speed = total_speed / counter
 
     for _type in table:
-        row = [_type]
+        row = ["$" + _type.replace("_", "\_") + "$"]
         for operation in table[_type]:
             count, time = table[_type][operation]
             speed = ((count / time) / max_speed) if time > 0 else -1
             row.append(round(speed, 3))
         print(*row, sep=" & ", end=" \\\\\n")
+        print("\\hline")
 
 if __name__ == "__main__":
     main()
