@@ -27,7 +27,7 @@
 #define OP(a, b) ((a) * (b))
 #define OP_LABEL ("multiply")
 #elif OP_TYPE == OP_DIVIDE
-#define OP(a, b) ((b) == 0 ? 0 : (a) / (b))
+#define OP(a, b) ((a) / (b))
 #define OP_LABEL ("divide")
 //#elif OP_TYPE == OP_MODULO
 //#define OP(a, b) ((b) == 0 ? 0 : (a) % (b))
@@ -56,13 +56,12 @@ time_unit test_operation(uint64_t do_one_over, uint64_t repeat, T _type_value = 
     std::chrono::high_resolution_clock::time_point start, finish;
     Magic<T> left, right;
     T result;
-    // count = 0;
 
     uint64_t overflow = (uint64_t)1 << (sizeof(T)*8); // 0001 -> 1'0000 // -x> 0'1111
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        for (left.source = 0; !(left.source & overflow); left.source += do_one_over) {
+        for (left.source = 1; !(left.source & overflow); left.source += do_one_over) {
             for (right.source = left.source; !(right.source & overflow); right.source += do_one_over) {
                 //x10(result = operation(left.view, right.view));
                 xtimes(result = OP(left.view, right.view));
@@ -88,7 +87,7 @@ time_unit test_operation(uint64_t do_one_over, uint64_t repeat, uint64_t _type_v
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        left.source = 0;
+        left.source = 1;
         do {
             right.source = left.source;
             do {
@@ -120,7 +119,7 @@ time_unit test_operation(uint64_t do_one_over, uint64_t repeat, int64_t _type_va
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        left.source = 0;
+        left.source = 1;
         do {
             right.source = left.source;
             do {
@@ -152,7 +151,7 @@ time_unit test_operation(uint64_t do_one_over, uint64_t repeat, double _type_val
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        left.source = 0;
+        left.source = 1;
         do {
             right.source = left.source;
             do {
