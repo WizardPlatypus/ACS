@@ -211,16 +211,17 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
+        const uint64_t repeat8 = 256;
         if (!strcmp(arg, "uint8_t")) {
-            type_test_wrapper<uint8_t>(arg, 1, 48);
+            type_test_wrapper<uint8_t>(arg, 1, repeat8);
             continue;
         }
         if (!strcmp(arg, "int8_t")) {
-            type_test_wrapper<int8_t>(arg, 1, 48);
+            type_test_wrapper<int8_t>(arg, 1, repeat8);
             continue;
         }
 
-        const uint64_t do_16_over = 18 * 6;
+        const uint64_t do_16_over = 8;
         if (!strcmp(arg, "uint16_t")) {
             type_test_wrapper<uint16_t>(arg, do_16_over, 1);
             continue;
@@ -230,7 +231,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_32_over = 1'200'481 * 6;
+        const uint64_t do_32_over = do_16_over << 16;
         if (!strcmp(arg, "uint32_t")) {
             type_test_wrapper<uint32_t>(arg, do_32_over, 1);
             continue;
@@ -244,7 +245,7 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        const uint64_t do_64_over = 5'156'024'596'349'061 * 6;
+        const uint64_t do_64_over = do_32_over << 32;
         if (!strcmp(arg, "uint64_t")) {
             type_test_wrapper<uint64_t>(arg, do_64_over, 1);
             continue;

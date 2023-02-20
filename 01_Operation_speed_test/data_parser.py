@@ -31,7 +31,6 @@ def make_table(file, x):
             get_data(file),
             get_data(file),
             get_data(file),
-            get_data(file),
         ]
 
         # print(nothing)
