@@ -1,6 +1,0 @@
-uint16_t,16,18,1,nothing,19127094
-uint16_t,16,18,1,add,19943140
-uint16_t,16,18,1,subtract,19189098
-uint16_t,16,18,1,multiply,19819133
-uint16_t,16,18,1,divide,23363337
-uint16_t,16,18,1,modulo,21911253
