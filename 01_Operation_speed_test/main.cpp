@@ -1,10 +1,9 @@
 #include <iostream> // input/output
 #include <chrono> // timers
-#include <cstring>
 #include <string>
 #include <forward_list> // single-linked list datastructure
-
-#include "mt19937-64.c" // Mesenne Twister — PRNG
+#include <random>
+#include <limits>
 
 #define OP_NOTHING 0
 #define OP_ADD 1
@@ -39,30 +38,30 @@
 #define xtimes(ex) x1000(ex); x1000(ex)
 #define XTIMES_LABEL ("2000")
 
-template<typename T>
-union Magic {
-    uint64_t source;
-    T view;
-};
-
 using time_unit = std::chrono::microseconds;
 
 template<typename T>
-time_unit test(uint64_t repeat) {
+time_unit test_int(uint64_t repeat) {
+    // fiddling with random number generation
+    // code from cppreference/.../uniform_int_distribution
+    std::random_device device;
+    std::mt19937_64 gen(device());
+    std::uniform_int_distribution<T> distribution(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+
     std::chrono::high_resolution_clock::time_point start, finish;
-    Magic<T> left, right;
+    T left, right;
     T result;
 
     start = std::chrono::high_resolution_clock::now();
     while (repeat--) {
-        left.source = genrand64_int64();
-        right.source = genrand64_int64();
+        left = distribution(gen);
+        right = distribution(gen);
         #if OP_TYPE == OP_DIVIDE || OP_TYPE == OP_MODULO
-        if (right.view == 0) {
-            right.source = 1;
+        if (right == 0) {
+            right = 1;
         }
         #endif
-        xtimes(OP(result, left.view, right.view));
+        xtimes(OP(result, left, right));
     }
     finish = std::chrono::high_resolution_clock::now();
 
@@ -70,8 +69,31 @@ time_unit test(uint64_t repeat) {
 }
 
 template<typename T>
-void test_wrapper(const std::string& type_label, const uint64_t& repeat) {
-    auto time = test<T>(repeat).count();
+time_unit test_real(uint64_t repeat) {
+    // fiddling with random number generation
+    // code from cppreference/.../uniform_real_distribution
+    std::random_device device;
+    std::mt19937_64 gen(device());
+    std::uniform_real_distribution<T> distribution(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+
+    std::chrono::high_resolution_clock::time_point start, finish;
+    T left, right;
+    T result;
+
+    start = std::chrono::high_resolution_clock::now();
+    while (repeat--) {
+        left = distribution(gen);
+        right = distribution(gen);
+        xtimes(OP(result, left, right));
+    }
+    finish = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<time_unit>(finish - start);
+}
+
+template<typename T>
+void test_int_wrapper(const std::string& type_label, const uint64_t& repeat) {
+    auto time = test_int<T>(repeat).count();
 
     std::forward_list<std::string> data {
         type_label,
@@ -91,8 +113,12 @@ void test_wrapper(const std::string& type_label, const uint64_t& repeat) {
 }
 
 template<typename T>
-void dummy(const std::string& type_label, const uint64_t& repeat) {
+void test_real_wrapper(const std::string& type_label, const uint64_t& repeat) {
+    #if OP_TYPE == OP_MODULO
     auto time = 0;
+    #else
+    auto time = test_real<T>(repeat).count();
+    #endif
 
     std::forward_list<std::string> data {
         type_label,
@@ -113,73 +139,62 @@ void dummy(const std::string& type_label, const uint64_t& repeat) {
 
 int main(int argc, const char *argv[]) {
     unsigned long long init[4]={0x12345ULL, 0x23456ULL, 0x34567ULL, 0x45678ULL}, length=4;
-    init_by_array64(init, length);
 
     for (int i = 1; i < argc; i++) {
-        const char* arg = argv[i];
+        auto arg = std::string(argv[i]);
 
-        if (!strcmp(arg, "labels")) {
+        if (!arg.compare("labels")) {
             std::cout << "type,size,x,repeat,operation,time" << std::endl;
             continue;
         }
 
-        const uint64_t repeat = (1ULL << 24);
+        // const uint64_t repeat = (1ULL << 24);
+        const uint64_t repeat = (1ULL << 12);
 
-        if (!strcmp(arg, "uint8_t")) {
-            test_wrapper<uint8_t>(arg, repeat);
+        if (!arg.compare("uint8_t")) {
+            test_int_wrapper<uint8_t>(arg, repeat);
             continue;
         }
-        if (!strcmp(arg, "int8_t")) {
-            test_wrapper<int8_t>(arg, repeat);
-            continue;
-        }
-
-        if (!strcmp(arg, "uint16_t")) {
-            test_wrapper<uint16_t>(arg, repeat);
-            continue;
-        }
-        if (!strcmp(arg, "int16_t")) {
-            test_wrapper<int16_t>(arg, repeat);
+        if (!arg.compare("int8_t")) {
+            test_int_wrapper<int8_t>(arg, repeat);
             continue;
         }
 
-        if (!strcmp(arg, "uint32_t")) {
-            test_wrapper<uint32_t>(arg, repeat);
+        if (!arg.compare("uint16_t")) {
+            test_int_wrapper<uint16_t>(arg, repeat);
             continue;
         }
-        if (!strcmp(arg, "int32_t")) {
-            test_wrapper<int32_t>(arg, repeat);
-            continue;
-        }
-
-        if (!strcmp(arg, "uint64_t")) {
-            test_wrapper<uint64_t>(arg, repeat);
-            continue;
-        }
-        if (!strcmp(arg, "int64_t")) {
-            test_wrapper<int64_t>(arg, repeat);
+        if (!arg.compare("int16_t")) {
+            test_int_wrapper<int16_t>(arg, repeat);
             continue;
         }
 
-        #if OP_TYPE == OP_MODULO
-        if (!strcmp(arg, "float")) {
-            dummy<float>(arg, repeat);
+        if (!arg.compare("uint32_t")) {
+            test_int_wrapper<uint32_t>(arg, repeat);
             continue;
         }
-        if (!strcmp(arg, "double")) {
-            dummy<double>(arg, repeat);
+        if (!arg.compare("int32_t")) {
+            test_int_wrapper<int32_t>(arg, repeat);
             continue;
         }
-        #else
-        if (!strcmp(arg, "float")) {
-            test_wrapper<float>(arg, repeat);
+
+        if (!arg.compare("uint64_t")) {
+            test_int_wrapper<uint64_t>(arg, repeat);
             continue;
         }
-        if (!strcmp(arg, "double")) {
-            test_wrapper<double>(arg, repeat);
+        if (!arg.compare("int64_t")) {
+            test_int_wrapper<int64_t>(arg, repeat);
             continue;
         }
-        #endif
+
+        if (!arg.compare("float")) {
+            test_real_wrapper<float>(arg, repeat);
+            continue;
+        }
+        if (!arg.compare("double")) {
+            test_real_wrapper<double>(arg, repeat);
+            continue;
+        }
     }
 
     return 0;
