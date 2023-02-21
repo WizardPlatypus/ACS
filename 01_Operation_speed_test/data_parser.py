@@ -65,38 +65,36 @@ def main():
 
     table = make_table(file)
 
-    for _type in table:
-        row = ["----"]
-        for operation in table[_type]:
-            row.append(operation)
-        print("\\hline")
-        print(*row, sep=" & ", end=" \\\\\n")
-        print("\\hline")
-        break
-
-    # total_speed = -1
-    # counter = 0
     max_speed = -1
     for _type in table:
         for operation in table[_type]:
             count, time = table[_type][operation]
-            speed = (count / time) if time > 0 else 0
+            speed = (count / time)
             max_speed = speed if speed > max_speed else max_speed
-            # if speed <= 0:
-            #     continue
-            # total_speed += speed
-            # counter += 1
     
-    # avg_speed = total_speed / counter
+    type_order = ["uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "uint64_t", "int64_t", "float", "double"]
+    operation_order = ["add", "subtract", "multiply", "divide", "modulo"]
 
-    for _type in table:
-        row = ["$" + _type.replace("_", "\_") + "$"]
-        for operation in table[_type]:
+    print("\\begin{tabular}{|c|c|c|c|c|c|}")
+    print("\\hline")
+    print("", *operation_order, sep=" & ", end=" \\\\\n")
+    print("\\hline")
+    for _type in type_order:
+        if _type not in table:
+            continue
+        display_type = _type.replace("_", "\_")
+        row = [ f"${display_type}$" ]
+        for operation in operation_order:
+            if operation not in table[_type]:
+                print("Missing operation: ", operation)
+                continue
             count, time = table[_type][operation]
-            speed = ((count / time) / max_speed) if time > 0 else -1
-            row.append(round(speed, 3))
+            ratio = ((count / time) / max_speed)
+            display = f"{ratio:.2f}" if time > 0 else ""
+            row.append(display)
         print(*row, sep=" & ", end=" \\\\\n")
         print("\\hline")
+    print("\\end{tabular}")
 
 if __name__ == "__main__":
     main()
