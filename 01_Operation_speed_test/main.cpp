@@ -138,8 +138,6 @@ void test_real_wrapper(const std::string& type_label, const uint64_t& repeat) {
 }
 
 int main(int argc, const char *argv[]) {
-    unsigned long long init[4]={0x12345ULL, 0x23456ULL, 0x34567ULL, 0x45678ULL}, length=4;
-
     for (int i = 1; i < argc; i++) {
         auto arg = std::string(argv[i]);
 
@@ -149,7 +147,7 @@ int main(int argc, const char *argv[]) {
         }
 
         // const uint64_t repeat = (1ULL << 24);
-        const uint64_t repeat = (1ULL << 12);
+        const uint64_t repeat = (1ULL << 4);
 
         if (!arg.compare("uint8_t")) {
             test_int_wrapper<uint8_t>(arg, repeat);
