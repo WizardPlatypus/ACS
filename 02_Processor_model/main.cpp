@@ -55,6 +55,10 @@ public:
 
         if (!op.compare("mov")) {
             mov(args[0], args[1]);
+        } else if (!op.compare("shl")) {
+            shl(args[0], args[1], args[2]);
+        } else if (!op.compare("shr")) {
+            shr(args[0], args[1], args[2]);
         } else {
             std::cerr << "Couldn't do the operation " << op << std::endl;
         }
@@ -102,6 +106,22 @@ private:
         SR = *dst > 0;
     }
 
+    void shl(Bits* dst, const Bits* src, const Bits* arg) {
+        Bits value = *src;
+        Bits how_much = *arg;
+        value <<= how_much;
+        *dst = value;
+        SR = value > 0;
+    }
+
+    void shr(Bits* dst, const Bits* src, const Bits* arg) {
+        Bits value = *src;
+        Bits how_much = *arg;
+        value >>= how_much;
+        *dst = value;
+        SR = value > 0;
+    }
+
     std::string IR; // Instruction register
 
     // Registers
@@ -120,5 +140,9 @@ int main() {
     cpu.tick("mov R1 5");
     std::cout << cpu.to_string() << std::endl;
     cpu.tick("mov R2 8");
+    std::cout << cpu.to_string() << std::endl;
+    cpu.tick("shl R3 R2 R1");
+    std::cout << cpu.to_string() << std::endl;
+    cpu.tick("shr R3 R3 R1");
     std::cout << cpu.to_string() << std::endl;
 }
