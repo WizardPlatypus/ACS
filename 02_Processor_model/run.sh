@@ -1,1 +1,1 @@
-g++ main.cpp -o main.exe && ./main && rm main.exe
+g++ main.cpp -o main.exe && ./main $1 && rm main.exe

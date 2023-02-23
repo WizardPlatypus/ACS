@@ -138,20 +138,24 @@ private:
     Bits SR; // Sign register
 };
 
-int main() {
-    CPU cpu;
-    std::ifstream file("program.txt");
+int main(int argc, const char* argv[]) {
+    for (int i = 1; i < argc; i++) {
+        CPU cpu;
 
-    std::cout << cpu.to_string() << std::endl;
-    while (file.good() && getch() != NEW_LINE_CODE) {
-        std::string line;
-        std::getline(file, line);
-        if (line.length() == 0) {
-            break;
-        }
+        std::string file_path = argv[i];
+        std::ifstream file(file_path);
 
-        cpu.tick(line);
         std::cout << cpu.to_string() << std::endl;
+        while (file.good() && getch() != NEW_LINE_CODE) {
+            std::string line;
+            std::getline(file, line);
+            if (line.length() == 0) {
+                break;
+            }
+
+            cpu.tick(line);
+            std::cout << cpu.to_string() << std::endl;
+        }
     }
 
     std::cout << "Bye =]" << std::endl;
