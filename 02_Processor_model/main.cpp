@@ -2,7 +2,11 @@
 #include <bitset>
 #include <sstream>
 #include <string>
-#include <vector>
+#include <fstream>
+// windows dependent; an easy way to wait for user input
+#include <conio.h> // for getch()
+
+#define NEW_LINE_CODE 13
 
 /*
 Operation syntax: opcode dst src1 src2
@@ -136,13 +140,19 @@ private:
 
 int main() {
     CPU cpu;
+    std::ifstream file("program.txt");
+
     std::cout << cpu.to_string() << std::endl;
-    cpu.tick("mov R1 5");
-    std::cout << cpu.to_string() << std::endl;
-    cpu.tick("mov R2 8");
-    std::cout << cpu.to_string() << std::endl;
-    cpu.tick("shl R3 R2 R1");
-    std::cout << cpu.to_string() << std::endl;
-    cpu.tick("shr R3 R3 R1");
-    std::cout << cpu.to_string() << std::endl;
+    while (file.good() && getch() != NEW_LINE_CODE) {
+        std::string line;
+        std::getline(file, line);
+        if (line.length() == 0) {
+            break;
+        }
+
+        cpu.tick(line);
+        std::cout << cpu.to_string() << std::endl;
+    }
+
+    std::cout << "Bye =]" << std::endl;
 }
