@@ -19,19 +19,12 @@ Operations to implement:
 - bit shifts left & right
 */
 
-using Bits = uint16_t;
+using Word = std::bitset<WORD_LENGTH>;
 
 // TODO: Support for negative integers
 struct CPU {
 public:
-    CPU() {
-        R1 = 0;
-        R2 = 0;
-        R3 = 0;
-        PC = 0;
-        TC = 0;
-        SR = 0;
-    }
+    CPU() {}
 
     void tick(std::string instruction) {
         int size;
@@ -39,35 +32,44 @@ public:
 
         std::string op = tokens[0];
 
-        Bits **args = new Bits*[size - 1];
+        int* ids = new int[size - 1];
         for (int i = 1; i < size; i++) {
             std::string token = tokens[i];
-            if (!token.compare("R1")) {
-                args[i - 1] = &R1;
+            if (token.at(0) == 'R') {
+                try {
+                    ids[i - 1] = std::stoi(token.substr(1, token.length() - 1));
+                } catch(const std::exception& e) {
+                    std::cerr << e.what() << std::endl;
+                    exit(1);
+                }
                 continue;
             }
-            if (!token.compare("R2")) {
-                args[i - 1] = &R2;
-                continue;
+            int value;
+            try {
+                value = std::stoi(token);
+            } catch(const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                exit(1);
             }
-            if (!token.compare("R3")) {
-                args[i - 1] = &R3;
-                continue;
-            }
-            args[i - 1] = new Bits {(Bits)std::stoi(token)};
+            set_value(0, value);
+            ids[i - 1] = 0;
         }
 
         if (!op.compare("mov")) {
-            mov(args[0], args[1]);
+            mov(ids[0], ids[1]);
         } else if (!op.compare("shl")) {
-            shl(args[0], args[1], args[2]);
+            shl(ids[0], ids[1], ids[2]);
         } else if (!op.compare("shr")) {
-            shr(args[0], args[1], args[2]);
+            shr(ids[0], ids[1], ids[2]);
+        } else if (!op.compare("add")) {
+            add(ids[0], ids[1], ids[2]);
         } else {
             std::cerr << "Couldn't do the operation " << op << std::endl;
         }
-        TC++;
-        PC++;
+
+        set_value(0, 1);
+        add(TC_id, TC_id, 0); // TC += 1;
+        add(PC_id, PC_id, 0); // PC += 1;
 
         delete[] tokens;
     }
@@ -78,26 +80,26 @@ public:
         for (int i = 1; i < REGISTER_COUNT + 1; i++) {
             buffer << 'R' << i << ": ";
             for (int j = 0; j < WORD_LENGTH; j++) {
-                buffer << memory[REGISTER_COUNT * i + j];
+                buffer << memory[WORD_LENGTH * i + j];
             }
             buffer << std::endl;
         }
         { // program counter
             buffer << "PC: ";
             for (int i = 0; i < WORD_LENGTH; i++) {
-                buffer << memory[RN_pos(PC_id) + i];
+                buffer << memory[get_ptr(PC_id) + i];
             }
             buffer << std::endl;
         }
         { // tick counter
             buffer << "PC: ";
             for (int i = 0; i < WORD_LENGTH; i++) {
-                buffer << memory[RN_pos(TC_id) + i];
+                buffer << memory[get_ptr(TC_id) + i];
             }
             buffer << std::endl;
         }
         // sign bit
-        buffer << "SB: " << memory[RN_pos(SB_id)] << std::endl;
+        buffer << "SB: " << memory[get_ptr(SB_id)] << std::endl;
         return buffer.str();
     }
 
@@ -123,58 +125,67 @@ private:
         return cursor;
     }
 
-    void mov(Bits* dst, const Bits* src) {
-        *dst = *src;
-        SR = *dst > 0;
-    }
-
     void mov(const int dst_id, const int src_id) {
-        int dst_ptr = RN_pos(dst_id);
-        int src_ptr = RN_pos(src_id);
+        int dst_ptr = get_ptr(dst_id);
+        int src_ptr = get_ptr(src_id);
         for (int i = 0; i < WORD_LENGTH; i++) {
             memory[dst_ptr + i] = memory[src_ptr + i];
         }
     }
 
-    void shl(Bits* dst, const Bits* src, const Bits* arg) {
-        Bits value = *src;
-        Bits how_much = *arg;
-        value <<= how_much;
-        *dst = value;
-        SR = value > 0;
+    void add(const int dst_id, const int a_id, const int b_id) {
+        unsigned a = get_value(a_id);
+        unsigned b = get_value(b_id);
+        set_value(dst_id, a + b);
     }
 
-    void shr(Bits* dst, const Bits* src, const Bits* arg) {
-        Bits value = *src;
-        Bits how_much = *arg;
-        value >>= how_much;
-        *dst = value;
-        SR = value > 0;
+    void shl(const int dst_id, const int src_id, const int arg_id) {
+        auto value = get_value(src_id);
+        auto arg= get_value(arg_id);
+        value <<= arg;
+        set_value(dst_id, value);
     }
 
+    void shr(const int dst_id, const int src_id, const int arg_id) {
+        auto value = get_value(src_id);
+        auto arg= get_value(arg_id);
+        value >>= arg;
+        set_value(dst_id, value);
+    }
+
+    unsigned get_value(const int id) {
+        int ptr = get_ptr(id);
+        Word bits;
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            bits[i] = memory[ptr + i];
+        }
+        return (unsigned)bits.to_ulong();
+    }
+
+    void set_value(const int id, const unsigned value) {
+        Word bits(value);
+
+        int ptr = get_ptr(id);
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            memory[ptr + i] = bits[i];
+        }
+    }
+
+    static constexpr int get_ptr(const int n) {
+        return n * WORD_LENGTH;
+    }
 
     // Registers
-    // TODO: add more registers
-    // TODO: store them as an actual bit array
     std::bitset<WORD_LENGTH * (/*register 0*/1 + REGISTER_COUNT + /*program counter*/1 + /*tick counter*/1) + /*sign bit*/1> memory;
+
     static const int PC_id = 1 + REGISTER_COUNT + 0;
     static const int TC_id = 1 + REGISTER_COUNT + 1;
     static const int SB_id = 1 + REGISTER_COUNT + 2;
-    static constexpr int RN_pos(const int n) {
-        return n * WORD_LENGTH;
-    }
-    Bits R1;
-    Bits R2;
-    Bits R3;
-
-    Bits PC; // Program counter
-    Bits TC; // Tick counter
-    Bits SR; // Sign register
 };
 
 int main(int argc, const char* argv[]) {
     // TODO: display cpu state before and after the operation
-    /*
+    //*
     for (int i = 1; i < argc; i++) {
         CPU cpu;
 
@@ -190,11 +201,9 @@ int main(int argc, const char* argv[]) {
             }
 
             cpu.tick(line);
+            std::cout << line << std::endl;
             std::cout << cpu.to_string() << std::endl;
         }
     }
     //*/
-    CPU cpu;
-    std::cout << cpu.to_string() << std::endl;
-    std::cout << "Bye =]" << std::endl;
 }
