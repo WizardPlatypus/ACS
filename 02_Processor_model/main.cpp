@@ -20,6 +20,7 @@ static constexpr int WORD_LENGTH = 13;
 using Bits = uint16_t;
 static constexpr int INSTRUCTION_LENGTH = 4;
 
+// TODO: Support for negative integers
 struct CPU {
 public:
     CPU() {
@@ -129,6 +130,8 @@ private:
     std::string IR; // Instruction register
 
     // Registers
+    // TODO: add more registers
+    // TODO: store them as an actual bit array
     Bits R1;
     Bits R2;
     Bits R3;
@@ -139,6 +142,7 @@ private:
 };
 
 int main(int argc, const char* argv[]) {
+    // TODO: display cpu state before and after the operation
     for (int i = 1; i < argc; i++) {
         CPU cpu;
 
