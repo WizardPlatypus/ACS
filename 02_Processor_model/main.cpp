@@ -6,8 +6,11 @@
 // windows dependent; an easy way to wait for user input
 #include <conio.h> // for getch()
 
-#define NEW_LINE_CODE 13
+#define WORD_LENGTH 13
+#define REGISTER_COUNT 7
 
+#define INSTRUCTION_LENGTH 4
+#define NEW_LINE_CODE 13
 /*
 Operation syntax: opcode dst src1 src2
 Word length: 13
@@ -16,15 +19,12 @@ Operations to implement:
 - bit shifts left & right
 */
 
-static constexpr int WORD_LENGTH = 13;
 using Bits = uint16_t;
-static constexpr int INSTRUCTION_LENGTH = 4;
 
 // TODO: Support for negative integers
 struct CPU {
 public:
     CPU() {
-        IR = "reset";
         R1 = 0;
         R2 = 0;
         R3 = 0;
@@ -34,7 +34,6 @@ public:
     }
 
     void tick(std::string instruction) {
-        IR = instruction;
         int size;
         auto tokens = parse_instruction(instruction, size);
 
@@ -69,18 +68,36 @@ public:
         }
         TC++;
         PC++;
+
+        delete[] tokens;
     }
 
     std::string to_string() {
         using namespace std;
         stringstream buffer;
-        buffer << "IR: " << IR << endl;
-        buffer << "R1: " << bitset<WORD_LENGTH>(R1) << endl;
-        buffer << "R2: " << bitset<WORD_LENGTH>(R2) << endl;
-        buffer << "R3: " << bitset<WORD_LENGTH>(R3) << endl;
-        buffer << "PC: " << bitset<WORD_LENGTH>(PC) << endl;
-        buffer << "TC: " << bitset<WORD_LENGTH>(TC) << endl;
-        buffer << "SR: " << bitset<1>(SR) << endl;
+        for (int i = 1; i < REGISTER_COUNT + 1; i++) {
+            buffer << 'R' << i << ": ";
+            for (int j = 0; j < WORD_LENGTH; j++) {
+                buffer << memory[REGISTER_COUNT * i + j];
+            }
+            buffer << std::endl;
+        }
+        { // program counter
+            buffer << "PC: ";
+            for (int i = 0; i < WORD_LENGTH; i++) {
+                buffer << memory[RN_pos(PC_id) + i];
+            }
+            buffer << std::endl;
+        }
+        { // tick counter
+            buffer << "PC: ";
+            for (int i = 0; i < WORD_LENGTH; i++) {
+                buffer << memory[RN_pos(TC_id) + i];
+            }
+            buffer << std::endl;
+        }
+        // sign bit
+        buffer << "SB: " << memory[RN_pos(SB_id)] << std::endl;
         return buffer.str();
     }
 
@@ -111,6 +128,14 @@ private:
         SR = *dst > 0;
     }
 
+    void mov(const int dst_id, const int src_id) {
+        int dst_ptr = RN_pos(dst_id);
+        int src_ptr = RN_pos(src_id);
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            memory[dst_ptr + i] = memory[src_ptr + i];
+        }
+    }
+
     void shl(Bits* dst, const Bits* src, const Bits* arg) {
         Bits value = *src;
         Bits how_much = *arg;
@@ -127,11 +152,17 @@ private:
         SR = value > 0;
     }
 
-    std::string IR; // Instruction register
 
     // Registers
     // TODO: add more registers
     // TODO: store them as an actual bit array
+    std::bitset<WORD_LENGTH * (/*register 0*/1 + REGISTER_COUNT + /*program counter*/1 + /*tick counter*/1) + /*sign bit*/1> memory;
+    static const int PC_id = 1 + REGISTER_COUNT + 0;
+    static const int TC_id = 1 + REGISTER_COUNT + 1;
+    static const int SB_id = 1 + REGISTER_COUNT + 2;
+    static constexpr int RN_pos(const int n) {
+        return n * WORD_LENGTH;
+    }
     Bits R1;
     Bits R2;
     Bits R3;
@@ -143,6 +174,7 @@ private:
 
 int main(int argc, const char* argv[]) {
     // TODO: display cpu state before and after the operation
+    /*
     for (int i = 1; i < argc; i++) {
         CPU cpu;
 
@@ -161,6 +193,8 @@ int main(int argc, const char* argv[]) {
             std::cout << cpu.to_string() << std::endl;
         }
     }
-
+    //*/
+    CPU cpu;
+    std::cout << cpu.to_string() << std::endl;
     std::cout << "Bye =]" << std::endl;
 }
