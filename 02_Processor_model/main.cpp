@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <fstream>
+#include <vector>
 // windows dependent; an easy way to wait for user input
 #include <conio.h> // for getch()
 
@@ -24,9 +25,23 @@ using Word = std::bitset<WORD_LENGTH>;
 // TODO: Support for negative integers
 struct CPU {
 public:
-    CPU() {}
+    CPU(std::vector<std::string> program) {
+        PC = 0; TC = 0;
+        this->program = std::vector<std::string>(program);
+        this->profile = std::vector<std::string>();
+        this->profile.reserve(program.size() * 2);
+    }
 
-    void tick(std::string instruction) {
+    void execute() {
+        while (PC < program.size()) {
+            this->next();
+            profile.push_back(this->to_string());
+            PC += 1;
+        }
+    }
+
+    void next() {
+        auto instruction = program[PC];
         int size;
         auto tokens = parse_instruction(instruction, size);
 
@@ -67,9 +82,7 @@ public:
             std::cerr << "Couldn't do the operation " << op << std::endl;
         }
 
-        set_value(0, 1);
-        add(TC_id, TC_id, 0); // TC += 1;
-        add(PC_id, PC_id, 0); // PC += 1;
+        TC += 1;
 
         delete[] tokens;
     }
@@ -77,6 +90,7 @@ public:
     std::string to_string() {
         using namespace std;
         stringstream buffer;
+        buffer << "Instruction #" << PC << ": " << program[PC] << std::endl;
         for (int i = 1; i < REGISTER_COUNT + 1; i++) {
             buffer << 'R' << i << ": ";
             for (int j = 0; j < WORD_LENGTH; j++) {
@@ -84,24 +98,16 @@ public:
             }
             buffer << std::endl;
         }
-        { // program counter
-            buffer << "PC: ";
-            for (int i = 0; i < WORD_LENGTH; i++) {
-                buffer << memory[get_ptr(PC_id) + i];
-            }
-            buffer << std::endl;
-        }
-        { // tick counter
-            buffer << "PC: ";
-            for (int i = 0; i < WORD_LENGTH; i++) {
-                buffer << memory[get_ptr(TC_id) + i];
-            }
-            buffer << std::endl;
-        }
+        // program counter
+        buffer << "PC: " << Word(PC) << std::endl;
+        // tick counter
+        buffer << "TC: " << Word(TC) << std::endl;
         // sign bit
         buffer << "SB: " << memory[get_ptr(SB_id)] << std::endl;
         return buffer.str();
     }
+
+    std::vector<std::string> profile;
 
 private:
     std::string* parse_instruction(std::string str, int& size) {
@@ -176,33 +182,40 @@ private:
     }
 
     // Registers
-    std::bitset<WORD_LENGTH * (/*register 0*/1 + REGISTER_COUNT + /*program counter*/1 + /*tick counter*/1) + /*sign bit*/1> memory;
+    std::bitset<WORD_LENGTH * (/*register 0*/1 + REGISTER_COUNT) + /*sign bit*/1> memory;
 
-    static const int PC_id = 1 + REGISTER_COUNT + 0;
-    static const int TC_id = 1 + REGISTER_COUNT + 1;
-    static const int SB_id = 1 + REGISTER_COUNT + 2;
+    static const int SB_id = 1 + REGISTER_COUNT;
+
+    int PC, TC; // program and tick counter
+
+    std::vector<std::string> program;
 };
 
 int main(int argc, const char* argv[]) {
     // TODO: display cpu state before and after the operation
     //*
+    std::cout << "Hallo????" << std::endl;
     for (int i = 1; i < argc; i++) {
-        CPU cpu;
-
         std::string file_path = argv[i];
         std::ifstream file(file_path);
+        std::vector<std::string> program;
 
-        std::cout << cpu.to_string() << std::endl;
-        while (file.good() && getch() != NEW_LINE_CODE) {
+        while (file.good()) {
             std::string line;
             std::getline(file, line);
             if (line.length() == 0) {
                 break;
             }
+            program.push_back(line);
+        }
 
-            cpu.tick(line);
-            std::cout << line << std::endl;
-            std::cout << cpu.to_string() << std::endl;
+        file.close();
+
+        CPU cpu(program);
+        cpu.execute();
+
+        for (int i = 0; i < cpu.profile.size() && getch() != NEW_LINE_CODE; i++) {
+            std::cout << cpu.profile[i] << std::endl;
         }
     }
     //*/
