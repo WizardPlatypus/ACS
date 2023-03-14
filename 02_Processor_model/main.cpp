@@ -7,6 +7,8 @@
 // windows dependent; an easy way to wait for user input
 #include <conio.h> // for getch()
 
+// #define DEBUG_OUTPUT
+
 #define WORD_LENGTH 13
 #define REGISTER_COUNT 7
 
@@ -22,7 +24,6 @@ Operations to implement:
 
 using Word = std::bitset<WORD_LENGTH>;
 
-// TODO: Support for negative integers
 struct CPU {
 public:
     CPU(std::vector<std::string> program) {
@@ -33,10 +34,12 @@ public:
     }
 
     void execute() {
+        profile.push_back(this->to_string(true));
         while (PC < program.size()) {
             this->next();
-            profile.push_back(this->to_string());
             PC += 1;
+            TC += 1;
+            profile.push_back(this->to_string());
         }
     }
 
@@ -82,28 +85,33 @@ public:
             std::cerr << "Couldn't do the operation " << op << std::endl;
         }
 
-        TC += 1;
-
         delete[] tokens;
+        delete[] ids;
     }
 
-    std::string to_string() {
+    std::string to_string(bool reset = false) {
         using namespace std;
         stringstream buffer;
-        buffer << "Instruction #" << PC << ": " << program[PC] << std::endl;
+
+        if (reset) {
+            buffer << "Instruction #0: Reset" << endl;
+        } else {
+            buffer << "Instruction #" << PC << ": " << program[PC - 1] << endl;
+        }
+
         for (int i = 1; i < REGISTER_COUNT + 1; i++) {
             buffer << 'R' << i << ": ";
             for (int j = 0; j < WORD_LENGTH; j++) {
                 buffer << memory[WORD_LENGTH * i + j];
             }
-            buffer << std::endl;
+            buffer << endl;
         }
         // program counter
-        buffer << "PC: " << Word(PC) << std::endl;
+        buffer << "PC: " << Word(PC) << endl;
         // tick counter
-        buffer << "TC: " << Word(TC) << std::endl;
+        buffer << "TC: " << Word(TC) << endl;
         // sign bit
-        buffer << "SB: " << memory[get_ptr(SB_id)] << std::endl;
+        buffer << "SB: " << memory[get_ptr(SB_id)] << endl;
         return buffer.str();
     }
 
@@ -192,9 +200,7 @@ private:
 };
 
 int main(int argc, const char* argv[]) {
-    // TODO: display cpu state before and after the operation
-    //*
-    std::cout << "Hallo????" << std::endl;
+
     for (int i = 1; i < argc; i++) {
         std::string file_path = argv[i];
         std::ifstream file(file_path);
@@ -211,12 +217,25 @@ int main(int argc, const char* argv[]) {
 
         file.close();
 
+        #ifdef DEBUG_OUTPUT
+        std::cerr << "Read file..." << std::endl;
+        #endif
+
         CPU cpu(program);
         cpu.execute();
+
+        #ifdef DEBUG_OUTPUT
+        std::cerr << "Executed program..." << std::endl;
+        #endif
+
+        std::cout << "See next tick of the program by pressing any key. To exit the program, press Enter." << std::endl;
 
         for (int i = 0; i < cpu.profile.size() && getch() != NEW_LINE_CODE; i++) {
             std::cout << cpu.profile[i] << std::endl;
         }
+
+        #ifdef DEBUG_OUTPUT
+        std::cerr << "Displayed program..." << std::endl;
+        #endif
     }
-    //*/
 }
