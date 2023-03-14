@@ -19,12 +19,6 @@
 
 int __cdecl main(void) 
 {
-    int status;
-
-    SOCKET clientSocket = INVALID_SOCKET;
-
-
-    
     // Initialize Winsock
     getWSADATA();
 
@@ -38,8 +32,7 @@ int __cdecl main(void)
         return 1;
     }
     // Setup the TCP listening socket
-    status = bind(listenSocket, hostInfo->ai_addr, (int)hostInfo->ai_addrlen);
-    if (status == SOCKET_ERROR) {
+    if (bind(listenSocket, hostInfo->ai_addr, (int)hostInfo->ai_addrlen) == SOCKET_ERROR) {
         std::cerr << "bind failed with error #" << WSAGetLastError() << std::endl;
         freeaddrinfo(hostInfo);
         closesocket(listenSocket);
@@ -48,8 +41,7 @@ int __cdecl main(void)
     }
     freeaddrinfo(hostInfo);
 
-    status = listen(listenSocket, SOMAXCONN);
-    if (status == SOCKET_ERROR) {
+    if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
         printf("listen failed with error: %d\n", WSAGetLastError());
         closesocket(listenSocket);
         WSACleanup();
@@ -57,7 +49,7 @@ int __cdecl main(void)
     }
 
     // Accept a client socket
-    clientSocket = accept(listenSocket, NULL, NULL);
+    SOCKET clientSocket = accept(listenSocket, NULL, NULL);
     if (clientSocket == INVALID_SOCKET) {
         printf("accept failed with error: %d\n", WSAGetLastError());
         closesocket(listenSocket);
@@ -67,7 +59,6 @@ int __cdecl main(void)
 
     // No longer need server socket
     closesocket(listenSocket);
-
     awaitClosing(clientSocket);
 
     // shutdown the connection since we're done
