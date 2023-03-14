@@ -102,14 +102,14 @@ public:
         for (int i = 1; i < REGISTER_COUNT + 1; i++) {
             buffer << 'R' << i << ": ";
             for (int j = 0; j < WORD_LENGTH; j++) {
-                buffer << memory[WORD_LENGTH * i + j];
+                buffer << memory[WORD_LENGTH * (i + 1) - j - 1];
             }
             buffer << endl;
         }
         // program counter
-        buffer << "PC: " << Word(PC) << endl;
+        buffer << "PC: " << word_to_string(PC) << endl;
         // tick counter
-        buffer << "TC: " << Word(TC) << endl;
+        buffer << "TC: " << word_to_string(TC) << endl;
         // sign bit
         buffer << "SB: " << memory[get_ptr(SB_id)] << endl;
         return buffer.str();
@@ -137,6 +137,15 @@ private:
             cursor++;
         }
         return cursor;
+    }
+
+    std::string word_to_string(Word word) {
+        using namespace std;
+        stringstream buffer;
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            buffer << word[WORD_LENGTH - i - 1];
+        }
+        return buffer.str();
     }
 
     void mov(const int dst_id, const int src_id) {
