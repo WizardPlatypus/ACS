@@ -57,16 +57,16 @@ public:
                 try {
                     ids[i - 1] = std::stoi(token.substr(1, token.length() - 1));
                 } catch(const std::exception& e) {
-                    std::cerr << e.what() << std::endl;
+                    std::cerr << "Failed to parse register token '" << token << "', stoi returned en error." << std::endl;
                     exit(1);
                 }
                 continue;
             }
             int value;
             try {
-                value = std::stoi(token);
+                value = std::stoll(token);
             } catch(const std::exception& e) {
-                std::cerr << e.what() << std::endl;
+                std::cerr << "Failed to parse value token '" << token << "', stoll returned en error." << std::endl;
                 exit(1);
             }
             set_value(0, value);
@@ -146,6 +146,15 @@ private:
             buffer << word[WORD_LENGTH - i - 1];
         }
         return buffer.str();
+    }
+
+    int normalize(long long value) {
+        std::bitset<sizeof(long long)*8> manyBits(value);
+        Word lessBits;
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            lessBits[i] = manyBits[i];
+        }
+        return (int)lessBits.to_ulong();
     }
 
     void mov(const int dst_id, const int src_id) {
