@@ -1,10 +1,10 @@
 #include <iostream>
-#include <cstring>
+#include <string>
 #include "socks.hpp"
 
 #define DEFAULT_PORT "27016"
 #define BUFFER_SIZE 512
-#define DEBUG
+//#define DEBUG
 
 using std::cout, std::cin, std::cerr, std::endl;
 
@@ -73,13 +73,14 @@ int main() {
     cout << "Enter messages to be sent. To exit, enter message \"exit\"" << endl;
     char buffer[BUFFER_SIZE];
     while (1) {
-        cin >> buffer;
+        std::string input;
+        std::getline(cin, input);
 
-        if (strcmp(buffer, "exit") == 0) {
+        if (input == "exit") {
             break;
         }
 
-        result = socks::cend(socket, buffer, strlen(buffer) + 1);
+        result = socks::cend(socket, input.c_str(), input.size() + 1);
         if (result == socks::error) {
             cerr << "socks::cend failed with error " << socks::lastError() << endl;
             socks::close(socket);

