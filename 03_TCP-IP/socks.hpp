@@ -68,7 +68,7 @@ namespace socks {
     inline int axcept(uint64_t sock, Address* buffer = nullptr, int* size = nullptr) {
         return accept(sock, buffer, size);
     }
-    inline int semd(uint64_t sock, const void* data, int size, int flags = 0) {
+    inline int cend(uint64_t sock, const void* data, int size, int flags = 0) {
         return send(sock, (const char*)data, size, flags);
     }
     inline int receive(uint64_t sock, void* buffer, int size, int flags = 0) {

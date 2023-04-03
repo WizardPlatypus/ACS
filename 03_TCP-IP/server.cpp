@@ -2,18 +2,24 @@
 #include "socks.hpp"
 
 #define DEFAULT_PORT "27016"
+#define BUFFER_SIZE 512
+#define DEBUG
 
 using std::cin, std::cout, std::cerr, std::endl;
 
 int main() {
-    int status;
+    int result;
 
     socks::SocksData data;
-    status = socks::init(socks::version, &data);
-    if (status == socks::error) {
+    result = socks::init(socks::version, &data);
+    if (result == socks::error) {
         cerr << "socks::init failed with error " << socks::lastError() << endl;
         return 1;
     }
+
+    #ifdef DEBUG
+    cout << "init success..." << endl;
+    #endif
 
     socks::AddressInfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -21,88 +27,124 @@ int main() {
     hints.ai_socktype = static_cast<int>(socks::SockType::stream);
     hints.ai_protocol = static_cast<int>(socks::Protocol::tcp);
 
+    #ifdef DEBUG
+    cout << "hints success..." << endl;
+    #endif
+
     socks::AddressInfo* info;
     // Resolve the server address and port
-    status = socks::getAddressInfo(nullptr, DEFAULT_PORT, &hints, &info);
-    if (status == socks::error) {
+    result = socks::getAddressInfo(nullptr, DEFAULT_PORT, &hints, &info);
+    if (result == socks::error) {
         cerr << "getAddressInfo failed with error #" << socks::lastError() << endl;
         socks::drop();
         return 1;
     }
 
-    uint64_t guard = socks::get(info->ai_family, info->ai_socktype, info->ai_protocol);
-    if (guard == socks::invalid_sock) {
+    #ifdef DEBUG
+    cout << "info success..." << endl;
+    #endif
+
+    uint64_t socket = socks::get(info->ai_family, info->ai_socktype, info->ai_protocol);
+    if (socket == socks::invalid_sock) {
         cerr << "socks::get failed with error " << socks::lastError() << endl;
         socks::freeAddressInfo(info);
         socks::drop();
         return 1;
     }
 
-    status = socks::bint(guard, info->ai_addr, (int)info->ai_addrlen);
-    if (status == socks::error) {
-        cerr << "socks::bind failed with error " << socks::lastError() << endl;
+    #ifdef DEBUG
+    cout << "get success..." << endl;
+    #endif
+
+    result = socks::bint(socket, info->ai_addr, (int)info->ai_addrlen);
+    if (result == socks::error) {
+        cerr << "socks::bint failed with error " << socks::lastError() << endl;
         socks::freeAddressInfo(info);
-        socks::close(guard);
+        socks::close(socket);
         socks::drop();
         return 1;
     }
+
+    #ifdef DEBUG
+    cout << "bint success..." << endl;
+    #endif
 
     socks::freeAddressInfo(info);
 
-    status = socks::lizten(guard, socks::max_queue_size);
-    if (status == socks::error) {
-        cerr << "socks::listen failed with error " << socks::lastError() << endl;
-        socks::close(guard);
+    result = socks::lizten(socket, 1);
+    if (result == socks::error) {
+        cerr << "socks::lizten failed with error " << socks::lastError() << endl;
+        socks::close(socket);
         socks::drop();
         return 1;
     }
 
-    uint64_t pilgrim = socks::axcept(guard, nullptr, nullptr);
-    if (pilgrim == socks::invalid_sock) {
+    #ifdef DEBUG
+    cout << "lizten success..." << endl;
+    #endif
+
+    uint64_t shoeket = socks::axcept(socket);
+    if (shoeket == socks::invalid_sock) {
         cerr << "socks::axcept failed with error " << socks::lastError() << endl;
-        socks::close(guard);
+        socks::close(socket);
         socks::drop();
         return 1;
     }
 
-    socks::close(guard);
+    #ifdef DEBUG
+    cout << "axcept success..." << endl;
+    #endif
 
-    const int size = 512;
-    unsigned char buffer[size];
+    socks::close(socket);
 
+    char buffer[BUFFER_SIZE];
     while (1) {
-        status = socks::receive(pilgrim, (void*)buffer, size);
-        if (status == socks::error) {
-            cerr << "socks::receive failed with error " << socks::lastError() << endl;
-            socks::close(pilgrim);
+        result = socks::receive(shoeket, buffer, BUFFER_SIZE);
+        if (result == socks::error) {
+            cerr << "socks::cend failed with error " << socks::lastError() << endl;
+            socks::close(shoeket);
             socks::drop();
             return 1;
         }
-        if (status == 0) {
+        if (result == 0) {
             cout << "connection was closed" << endl;
             break;
         }
-        cout << "received " << status << " bytes" << endl;
+
+        #ifdef DEBUG
+        cout << "received " << result << " bytes" << endl;
+        #endif
+
+        int size = result / sizeof(char);
+        for (int i = 0; i < size; i++) {
+            cout << buffer[i];
+        }
+        cout << endl;
+
+        for (int i = 0; i <= size / 2; i++) {
+            auto t = buffer[i];
+            buffer[i] = buffer[size - i - 1];
+            buffer[size - i - 1] = t;
+        }
+
+        result = socks::cend(shoeket, buffer, size);
+        if (result == socks::error) {
+            cerr << "socks::cend failed with error " << socks::lastError() << endl;
+            socks::close(shoeket);
+            socks::drop();
+            return 1;
+        }
+        if (result == 0) {
+            cout << "connection was closed" << endl;
+            break;
+        }
+
+        #ifdef DEBUG
+        cout << "sent " << result << " bytes out of " << strlen(buffer) + 1 << endl;
+        #endif
     }
 
-
-    #if 0
-    status = socks::send(pilgrim, (void*)buffer, status);
-    if (status == socks::error) {
-        cerr << "socks::send failed with error " << socks::lastError() << endl;
-        socks::close(pilgrim);
-        socks::drop();
-        return 1;
-    }
-
-    if (status == 0) {
-        cout << "connection was closed" << endl;
-    } else {
-        cout << "sent " << status << " bytes" << endl;
-    }
-    #endif
-
-    socks::close(pilgrim);
+    socks::close(shoeket);
     socks::drop();
 
     return 0;

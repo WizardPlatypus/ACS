@@ -1,16 +1,18 @@
 #include <iostream>
+#include <cstring>
 #include "socks.hpp"
 
 #define DEFAULT_PORT "27016"
+#define BUFFER_SIZE 512
 #define DEBUG
 
 using std::cout, std::cin, std::cerr, std::endl;
 
 int main() {
-    int status;
+    int result;
     socks::SocksData data;
-    status = socks::init(socks::version, &data);
-    if(status == socks::error) {
+    result = socks::init(socks::version, &data);
+    if(result == socks::error) {
         cerr << "socks::init failed" << endl;
         return 1;
     }
@@ -30,8 +32,8 @@ int main() {
 
     socks::AddressInfo* info = nullptr;
     // Resolve the server address and port
-    status = socks::getAddressInfo(/*serverName*/nullptr, DEFAULT_PORT, &hints, &info);
-    if (status == socks::error) {
+    result = socks::getAddressInfo(/*serverName*/nullptr, DEFAULT_PORT, &hints, &info);
+    if (result == socks::error) {
         cerr << "getAddressInfo failed with error #" << socks::lastError() << endl;
         socks::drop();
         return 1;
@@ -53,8 +55,8 @@ int main() {
     cout << "get success" << endl;
     #endif
 
-    status = socks::comect(socket, info->ai_addr, info->ai_addrlen);
-    if (status == socks::error) {
+    result = socks::comect(socket, info->ai_addr, info->ai_addrlen);
+    if (result == socks::error) {
         cerr << "socks::comect failed with error " << socks::lastError() << endl;
         socks::close(socket);
         socks::freeAddressInfo(info);
@@ -68,39 +70,51 @@ int main() {
 
     socks::freeAddressInfo(info);
 
-    const char* message = "Test message";
-    status = socks::semd(socket, (void*) message, sizeof(message));
-    if (status == socks::error) {
-        cerr << "socks::send failed with error " << socks::lastError() << endl;
-        socks::close(socket);
-        socks::drop();
-        return 1;
-    }
-    if (status < sizeof(message)) {
-        cout << "not all the bytes have been sent, " << sizeof(message) - status << " left" << endl;
-    }
-
-    #ifdef DEBUG
-    cout << "semd success" << endl;
-    #endif
-
-    socks::limit(socket, static_cast<int>(socks::LimitFlags::send));
-
-    const int size = 512;
-    unsigned char buffer[size];
+    cout << "Enter messages to be sent. To exit, enter message \"exit\"" << endl;
+    char buffer[BUFFER_SIZE];
     while (1) {
-        status = socks::receive(socket, (void*)buffer, size);
-        if (status == 0) {
-            cout << "connection closed" << endl;
+        cin >> buffer;
+
+        if (strcmp(buffer, "exit") == 0) {
             break;
         }
-        if (status == socks::error) {
-            cerr << "socks::receive failed with error " << socks::lastError() << endl;
+
+        result = socks::cend(socket, buffer, strlen(buffer) + 1);
+        if (result == socks::error) {
+            cerr << "socks::cend failed with error " << socks::lastError() << endl;
             socks::close(socket);
             socks::drop();
             return 1;
         }
-        cout << "received " << status << " bytes" << endl;
+        if (result == 0) {
+            cout << "connection was closed" << endl;
+            break;
+        }
+
+        #ifdef DEBUG
+        cout << "sent " << result << " bytes out of " << strlen(buffer) + 1 << endl;
+        #endif
+
+        result = socks::receive(socket, buffer, BUFFER_SIZE);
+        if (result == socks::error) {
+            cerr << "socks::cend failed with error " << socks::lastError() << endl;
+            socks::close(socket);
+            socks::drop();
+            return 1;
+        }
+        if (result == 0) {
+            cout << "connection was closed" << endl;
+            break;
+        }
+
+        #ifdef DEBUG
+        cout << "received " << result << " bytes" << endl;
+        #endif
+
+        for (int i = 0; i < (result / sizeof(char)); i++) {
+            cout << buffer[i];
+        }
+        cout << endl;
     }
 
     socks::close(socket);
