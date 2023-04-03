@@ -5,8 +5,8 @@
 #include "socks.hpp"
 
 #define DEFAULT_PORT "27016"
-#define BUFFER_SIZE 512
-//#define DEBUG
+#define BUFFER_SIZE 1024
+#define DEBUG
 
 using std::cin, std::cout, std::cerr, std::endl;
 
