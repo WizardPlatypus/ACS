@@ -1,72 +1,109 @@
-#undef UNICODE
-
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <iostream>
-#include "shared.hpp"
+#include "socks.hpp"
 
-// Need to link with Ws2_32.lib
-#pragma comment (lib, "Ws2_32.lib")
-// #pragma comment (lib, "Mswsock.lib")
+#define DEFAULT_PORT "27016"
 
-#define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27015"
+using std::cin, std::cout, std::cerr, std::endl;
 
-int __cdecl main(void) 
-{
-    // Initialize Winsock
-    getWSADATA();
+int main() {
+    int status;
 
-    addrinfo *hostInfo = getHostInfo(NULL);
-    // Create a SOCKET for the server to listen for client connections.
-    SOCKET listenSocket = socket(hostInfo->ai_family, hostInfo->ai_socktype, hostInfo->ai_protocol);
-    if (listenSocket == INVALID_SOCKET) {
-        printf("socket failed with error: %ld\n", WSAGetLastError());
-        freeaddrinfo(hostInfo);
-        WSACleanup();
-        return 1;
-    }
-    // Setup the TCP listening socket
-    if (bind(listenSocket, hostInfo->ai_addr, (int)hostInfo->ai_addrlen) == SOCKET_ERROR) {
-        std::cerr << "bind failed with error #" << WSAGetLastError() << std::endl;
-        freeaddrinfo(hostInfo);
-        closesocket(listenSocket);
-        WSACleanup();
-        return 1;
-    }
-    freeaddrinfo(hostInfo);
-
-    if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
-        printf("listen failed with error: %d\n", WSAGetLastError());
-        closesocket(listenSocket);
-        WSACleanup();
+    socks::SocksData data;
+    status = socks::init(socks::version, &data);
+    if (status == socks::error) {
+        cerr << "socks::init failed with error " << socks::lastError() << endl;
         return 1;
     }
 
-    // Accept a client socket
-    SOCKET clientSocket = accept(listenSocket, NULL, NULL);
-    if (clientSocket == INVALID_SOCKET) {
-        printf("accept failed with error: %d\n", WSAGetLastError());
-        closesocket(listenSocket);
-        WSACleanup();
+    socks::AddressInfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = static_cast<int>(socks::AddressFamily::unspec);
+    hints.ai_socktype = static_cast<int>(socks::SockType::stream);
+    hints.ai_protocol = static_cast<int>(socks::Protocol::tcp);
+
+    socks::AddressInfo* info;
+    // Resolve the server address and port
+    status = socks::getAddressInfo(nullptr, DEFAULT_PORT, &hints, &info);
+    if (status == socks::error) {
+        cerr << "getAddressInfo failed with error #" << socks::lastError() << endl;
+        socks::drop();
         return 1;
     }
 
-    // No longer need server socket
-    closesocket(listenSocket);
-    awaitClosing(clientSocket);
+    uint64_t guard = socks::get(info->ai_family, info->ai_socktype, info->ai_protocol);
+    if (guard == socks::invalid_sock) {
+        cerr << "socks::get failed with error " << socks::lastError() << endl;
+        socks::freeAddressInfo(info);
+        socks::drop();
+        return 1;
+    }
 
-    // shutdown the connection since we're done
-    disconnect(clientSocket);
+    status = socks::bint(guard, info->ai_addr, (int)info->ai_addrlen);
+    if (status == socks::error) {
+        cerr << "socks::bind failed with error " << socks::lastError() << endl;
+        socks::freeAddressInfo(info);
+        socks::close(guard);
+        socks::drop();
+        return 1;
+    }
 
-    // cleanup
-    closesocket(clientSocket);
-    WSACleanup();
+    socks::freeAddressInfo(info);
+
+    status = socks::lizten(guard, socks::max_queue_size);
+    if (status == socks::error) {
+        cerr << "socks::listen failed with error " << socks::lastError() << endl;
+        socks::close(guard);
+        socks::drop();
+        return 1;
+    }
+
+    uint64_t pilgrim = socks::axcept(guard, nullptr, nullptr);
+    if (pilgrim == socks::invalid_sock) {
+        cerr << "socks::axcept failed with error " << socks::lastError() << endl;
+        socks::close(guard);
+        socks::drop();
+        return 1;
+    }
+
+    socks::close(guard);
+
+    const int size = 512;
+    unsigned char buffer[size];
+
+    while (1) {
+        status = socks::receive(pilgrim, (void*)buffer, size);
+        if (status == socks::error) {
+            cerr << "socks::receive failed with error " << socks::lastError() << endl;
+            socks::close(pilgrim);
+            socks::drop();
+            return 1;
+        }
+        if (status == 0) {
+            cout << "connection was closed" << endl;
+            break;
+        }
+        cout << "received " << status << " bytes" << endl;
+    }
+
+
+    #if 0
+    status = socks::send(pilgrim, (void*)buffer, status);
+    if (status == socks::error) {
+        cerr << "socks::send failed with error " << socks::lastError() << endl;
+        socks::close(pilgrim);
+        socks::drop();
+        return 1;
+    }
+
+    if (status == 0) {
+        cout << "connection was closed" << endl;
+    } else {
+        cout << "sent " << status << " bytes" << endl;
+    }
+    #endif
+
+    socks::close(pilgrim);
+    socks::drop();
 
     return 0;
 }

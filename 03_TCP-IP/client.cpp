@@ -1,58 +1,108 @@
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <iostream>
-#include "shared.hpp"
+#include "socks.hpp"
 
+#define DEFAULT_PORT "27016"
+#define DEBUG
 
-// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "AdvApi32.lib")
+using std::cout, std::cin, std::cerr, std::endl;
 
-
-void sendBuffer(SOCKET, const char*, int);
-
-int __cdecl main(int argc, char **argv) {
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " server-name(localhost)" << std::endl;
+int main() {
+    int status;
+    socks::SocksData data;
+    status = socks::init(socks::version, &data);
+    if(status == socks::error) {
+        cerr << "socks::init failed" << endl;
         return 1;
     }
-    auto serverName = argv[1];
-    getWSADATA();
+    #ifdef DEBUG
+    cout << "init success" << endl;
+    #endif
 
-    addrinfo *hostInfo = getHostInfo(serverName);
-    SOCKET targetSocket = getSocket(hostInfo);
-    freeaddrinfo(hostInfo);
+    socks::AddressInfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = static_cast<int>(socks::AddressFamily::unspec);
+    hints.ai_socktype = static_cast<int>(socks::SockType::stream);
+    hints.ai_protocol = static_cast<int>(socks::Protocol::tcp);
 
-    // Send an initial buffer
-    const char *message = "Test message";
-    sendBuffer(targetSocket, message, (int)strlen(message));
-    // shutdown the connection since no more data will be sent
-    disconnect(targetSocket);
-    // Receive until the peer closes the connection
-    awaitClosing(targetSocket);
-    // cleanup
-    closesocket(targetSocket);
+    #ifdef DEBUG
+    cout << "hints success" << endl;
+    #endif
 
-    WSACleanup();
-    return 0;
-}
-
-
-void sendBuffer(SOCKET s, const char* buffer, const int length) {
-    int status = send(s, buffer, length, 0);
-    if (status == SOCKET_ERROR) {
-        std::cout << "send failed with error: " << WSAGetLastError() << std::endl;
-        closesocket(s);
-        WSACleanup();
-        exit(1);
+    socks::AddressInfo* info = nullptr;
+    // Resolve the server address and port
+    status = socks::getAddressInfo(/*serverName*/nullptr, DEFAULT_PORT, &hints, &info);
+    if (status == socks::error) {
+        cerr << "getAddressInfo failed with error #" << socks::lastError() << endl;
+        socks::drop();
+        return 1;
     }
-    std::cout << "Sent " << status << " bytes" << std::endl;
+
+    #ifdef DEBUG
+    cout << "info success" << endl;
+    #endif
+
+    uint64_t socket = socks::get(info->ai_family, info->ai_socktype, info->ai_protocol);
+    if (socket == socks::invalid_sock) {
+        cerr << "socks::get failed with error " << socks::lastError() << endl;
+        socks::freeAddressInfo(info);
+        socks::drop();
+        return 1;
+    }
+
+    #ifdef DEBUG
+    cout << "get success" << endl;
+    #endif
+
+    status = socks::comect(socket, info->ai_addr, info->ai_addrlen);
+    if (status == socks::error) {
+        cerr << "socks::comect failed with error " << socks::lastError() << endl;
+        socks::close(socket);
+        socks::freeAddressInfo(info);
+        socks::drop();
+        return 1;
+    }
+
+    #ifdef DEBUG
+    cout << "comect success" << endl;
+    #endif
+
+    socks::freeAddressInfo(info);
+
+    const char* message = "Test message";
+    status = socks::semd(socket, (void*) message, sizeof(message));
+    if (status == socks::error) {
+        cerr << "socks::send failed with error " << socks::lastError() << endl;
+        socks::close(socket);
+        socks::drop();
+        return 1;
+    }
+    if (status < sizeof(message)) {
+        cout << "not all the bytes have been sent, " << sizeof(message) - status << " left" << endl;
+    }
+
+    #ifdef DEBUG
+    cout << "semd success" << endl;
+    #endif
+
+    socks::limit(socket, static_cast<int>(socks::LimitFlags::send));
+
+    const int size = 512;
+    unsigned char buffer[size];
+    while (1) {
+        status = socks::receive(socket, (void*)buffer, size);
+        if (status == 0) {
+            cout << "connection closed" << endl;
+            break;
+        }
+        if (status == socks::error) {
+            cerr << "socks::receive failed with error " << socks::lastError() << endl;
+            socks::close(socket);
+            socks::drop();
+            return 1;
+        }
+        cout << "received " << status << " bytes" << endl;
+    }
+
+    socks::close(socket);
+    socks::drop();
 }
-
-
